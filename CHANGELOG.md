@@ -2,7 +2,7 @@
 
 ## 0.3.0 - Plugin Center Preview
 
-- Add a sandboxed desktop Plugin Center available from the system tray.
+- Add the Plugin Center inside DSH Settings → Plugins, with the system tray window retained as a fallback shortcut.
 - Install, enable, disable, and uninstall allowlisted Agent Preset packages.
 - Keep user and external Presets read-only and never modify shipped DSH Presets.
 - Verify bundled plugin digests and use transactional filesystem operations.

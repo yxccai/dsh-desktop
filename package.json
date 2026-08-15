@@ -9,7 +9,7 @@
   "scripts": {
     "start": "electron .",
     "dev": "electron .",
-    "check": "node --check src/main.js && node --check src/preload.js && node --check src/plugin-center-preload.js && node --check src/plugin-center.js && node --check src/plugin-manager.js && node --check src/runtime-manager.js && node --check src/config.js && node --check src/environment-detector.js",
+    "check": "node --check src/main.js && node --check src/preload.js && node --check src/plugin-center-preload.js && node --check src/plugin-center.js && node --check src/plugin-manager.js && node --check src/dsh-integration.js && node --check src/runtime-manager.js && node --check src/config.js && node --check src/environment-detector.js",
     "test": "node --test",
     "build": "electron-builder --win nsis portable",
     "build:win": "electron-builder --win nsis portable --x64",
@@ -20,7 +20,8 @@
     "pack": "electron-builder --dir"
   },
   "dependencies": {
-    "@deepseek-ai/dsh": "0.1.0-rc.6"
+    "@deepseek-ai/dsh": "0.1.0-rc.6",
+    "@yxccai/dsh-desktop-plugin-center": "file:resources/dsh-plugin-center"
   },
   "devDependencies": {
     "electron": "^39.0.0",

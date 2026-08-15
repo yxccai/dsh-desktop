@@ -6,6 +6,7 @@ dist/
 .portable-test-data-v*/
 .bundled-runtime-test*/
 .hybrid-packaged-test/
+.settings-integration-test/
 .packaged-test-data/
 .portable-test-data/
 .test-user-data/

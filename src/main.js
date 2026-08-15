@@ -7,6 +7,7 @@ const { RuntimeManager } = require('./runtime-manager');
 const { configDefaults, loadConfig } = require('./config');
 const { detectEnvironment } = require('./environment-detector');
 const { PluginManager } = require('./plugin-manager');
+const { ensureDshIntegration } = require('./dsh-integration');
 
 // Keep desktop-only state separate from DSH_HOME. Users who avoid the system
 // drive can set DSH_DESKTOP_HOME before launching the app.
@@ -122,7 +123,8 @@ function createPluginCenterWindow() {
 }
 
 function isPluginCenterSender(event) {
-  return Boolean(pluginCenterWindow && !pluginCenterWindow.isDestroyed() && event.sender === pluginCenterWindow.webContents);
+  if (pluginCenterWindow && !pluginCenterWindow.isDestroyed() && event.sender === pluginCenterWindow.webContents) return true;
+  return Boolean(mainWindow && !mainWindow.isDestroyed() && event.sender === mainWindow.webContents && isAllowedNavigation(event.sender.getURL()));
 }
 
 function registerPluginCenterIpc() {
@@ -187,6 +189,8 @@ async function start() {
     catalogPath: path.join(resourceRoot, 'plugin-catalog.json'),
     bundleRoot: path.join(resourceRoot, 'plugins'),
   });
+  const integration = ensureDshIntegration(config.dshHome);
+  if (integration.changed) log(`Enabled DSH settings Plugin Center in ${integration.patchPath}; DSH restart required`);
   registerPluginCenterIpc();
   const environment = await detectEnvironment({
     appPath: app.getAppPath(),
