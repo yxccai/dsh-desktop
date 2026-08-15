@@ -133,6 +133,17 @@ window.__ModuleLoader__.load({
         const listener = (event) => { if (!root || event.detail.root === root) { const next = !open; setOpen(next); api.projectPanel.setState(root, { width, collapsed: !next, activeTab: tab }); } };
         window.addEventListener('dsh-desktop-project-panel-toggle', listener); return () => window.removeEventListener('dsh-desktop-project-panel-toggle', listener);
       }, [root, open, width, tab]);
+      React.useLayoutEffect(() => {
+        const panel = document.querySelector('.dpp-panel');
+        const frame = panel?.parentElement?.parentElement;
+        if (!panel || !frame) return;
+        const parent = frame.parentElement;
+        const previous = { frameWidth: frame.style.width, frameMaxWidth: frame.style.maxWidth, parentOverflow: parent?.style.overflow || '' };
+        frame.style.width = `calc(100% - ${width}px)`;
+        frame.style.maxWidth = `calc(100% - ${width}px)`;
+        if (parent) parent.style.overflow = 'hidden';
+        return () => { frame.style.width = previous.frameWidth; frame.style.maxWidth = previous.frameMaxWidth; if (parent) parent.style.overflow = previous.parentOverflow; };
+      }, [root, open, width]);
       if (!root || !open) return null;
       const updateDraft = (filePath, draft) => { setFiles((old) => old.map((x) => x.path === filePath ? { ...x, draft } : x)); setActive((old) => old?.path === filePath ? { ...old, draft } : old); };
       const closeTab = (event, file) => { event.stopPropagation(); if (file.editable && file.draft !== file.content && !confirm(`放弃 ${file.name} 的未保存修改？`)) return; const next = files.filter((x) => x.path !== file.path); setFiles(next); if (active?.path === file.path) setActive(next.at(-1) || null); };
@@ -147,12 +158,8 @@ window.__ModuleLoader__.load({
     function apply(ctx) {
       const slots = ctx.get("slots");
       if (!slots || !api?.pluginCenter || !api?.projectPanel) return;
-      ctx.effect(() => { const style = document.createElement("style"); style.textContent = css + `.dpp-preview-main{display:flex;flex-direction:column;flex:1;min-height:0}.dpp-conversation-files{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:8px;color:var(--dsw-alias-label-secondary);font-size:12px}.dpp-conversation-files button{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-brand-primary);border-radius:6px;padding:3px 7px;cursor:pointer}html[data-dpp-open] body>div:first-child{width:calc(100% - var(--dpp-panel-width))!important;transition:width .18s ease}`; document.head.appendChild(style); return () => style.remove(); });
-      ctx.effect(() => {
-        const sync = () => { const panel = document.querySelector('.dpp-panel'); document.documentElement.style.setProperty('--dpp-panel-width', panel ? `${panel.getBoundingClientRect().width}px` : '0px'); document.documentElement.toggleAttribute('data-dpp-open', !!panel); };
-        const observer = new MutationObserver(sync); observer.observe(document.body, { childList: true, subtree: true }); sync();
-        return () => { observer.disconnect(); document.documentElement.style.removeProperty('--dpp-panel-width'); document.documentElement.removeAttribute('data-dpp-open'); };
-      });
+      ctx.effect(() => { const style = document.createElement("style"); style.textContent = css + `.dpp-preview-main{display:flex;flex-direction:column;flex:1;min-height:0}.dpp-conversation-files{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:8px;color:var(--dsw-alias-label-secondary);font-size:12px}.dpp-conversation-files button{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-brand-primary);border-radius:6px;padding:3px 7px;cursor:pointer}`; document.head.appendChild(style); return () => style.remove(); });
+
       slots.inject("settings.plugins.tab", () => slots.register({ name: "settings.plugins.tab", id: "desktop-center", order: 20, label: "插件中心" }, PluginCenterTab));
       slots.inject("conversation.session.header.actions", () => slots.register({ name: "conversation.session.header.actions", id: "desktop-project-panel", order: 30, label: "项目" }, ProjectPanelToggle));
       slots.inject("conversation.chat.turnTail", () => slots.register({ name: "conversation.chat.turnTail", select: (owner) => { const data = owner.turn.data.get('deliverables'); if (!data) return null; const paths = []; const seen = new Set(); for (const item of data.produced) { if (item.seq <= owner.seq && !seen.has(item.path)) { seen.add(item.path); paths.push(item.path); } } return paths.length ? paths : null; } }, ConversationFiles));
