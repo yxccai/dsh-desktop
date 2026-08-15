@@ -270,13 +270,13 @@ window.__ModuleLoader__.load({
           const background = custom ? await api.pluginCenter.backgroundGet() : null;
           imageLayer?.remove(); imageLayer = null; disposeImageTokens?.(); disposeImageTokens = null;
           if (background?.dataUrl) disposeImageTokens = theme.overrideTokens('dsh-desktop-custom-background', {
-            '--dsw-alias-bg-base': { light: 'rgba(245,250,252,.52)', dark: 'rgba(6,19,31,.5)' },
-            '--dsw-alias-bg-layer-1': { light: 'rgba(255,255,255,.45)', dark: 'rgba(11,32,48,.44)' },
-            '--dsw-alias-bg-layer-2': { light: 'rgba(239,247,250,.38)', dark: 'rgba(16,43,61,.38)' },
-            '--dsw-specific-sidebar-fill': { light: 'rgba(235,245,248,.62)', dark: 'rgba(8,27,41,.6)' }
+            '--dsw-alias-bg-base': { light: 'rgba(245,250,252,.69)', dark: 'rgba(6,19,31,.67)' },
+            '--dsw-alias-bg-layer-1': { light: 'rgba(255,255,255,.6)', dark: 'rgba(11,32,48,.6)' },
+            '--dsw-alias-bg-layer-2': { light: 'rgba(239,247,250,.55)', dark: 'rgba(16,43,61,.55)' },
+            '--dsw-specific-sidebar-fill': { light: 'rgba(235,245,248,.75)', dark: 'rgba(8,27,41,.74)' }
           });
           const frame = document.querySelector('[data-dsh-desktop-frame="true"]');
-          if (background?.dataUrl && frame) { imageLayer = document.createElement('div'); imageLayer.dataset.dshDesktopTheme = CUSTOM_BACKGROUND_ID; imageLayer.setAttribute('aria-hidden', 'true'); imageLayer.style.cssText = `position:absolute;inset:0;z-index:-1;pointer-events:none;background-image:linear-gradient(rgba(4,12,20,.08),rgba(4,12,20,.15)),url(${JSON.stringify(background.dataUrl)});background-position:center;background-size:cover;background-repeat:no-repeat`; if (getComputedStyle(frame).position === 'static') frame.style.position = 'relative'; frame.style.isolation = 'isolate'; frame.prepend(imageLayer); }
+          if (background?.dataUrl && frame) { imageLayer = document.createElement('div'); imageLayer.dataset.dshDesktopTheme = CUSTOM_BACKGROUND_ID; imageLayer.setAttribute('aria-hidden', 'true'); imageLayer.style.cssText = `position:absolute;inset:0;z-index:-1;pointer-events:none;background-image:linear-gradient(rgba(4,12,20,.18),rgba(4,12,20,.27)),url(${JSON.stringify(background.dataUrl)});background-position:center;background-size:cover;background-repeat:no-repeat`; if (getComputedStyle(frame).position === 'static') frame.style.position = 'relative'; frame.style.isolation = 'isolate'; frame.prepend(imageLayer); }
         } catch (error) { console.error('managed theme sync failed', error); }
       };
       sync(); const listener = () => { if (!cancelled) sync(); }; window.addEventListener('dsh-desktop-plugin-catalog-change', listener);
