@@ -1,5 +1,7 @@
 # DSH Desktop 0.2.0
 
+English | [简体中文](README.zh-CN.md)
+
 Unofficial open-source Electron desktop shell for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness).
 
 > This community project is not affiliated with or endorsed by DeepSeek.
