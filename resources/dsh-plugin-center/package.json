@@ -1,6 +1,6 @@
 {
   "name": "@yxccai/dsh-desktop-plugin-center",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
