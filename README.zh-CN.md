@@ -4,8 +4,6 @@
 
 一个基于 DeepSeek Harness 的非官方开源桌面端，提供更简单、直观的桌面使用体验。
 
-> 本项目由社区维护，与 DeepSeek 官方不存在隶属或背书关系。
-
 ## 项目优势
 
 - **一键使用**：Windows 安装后即可启动，无需手动配置命令行。
@@ -23,8 +21,6 @@
 - [Windows x64 便携版](https://github.com/yxccai/dsh-desktop/releases/download/v0.2.0/DSH-Desktop-Portable-0.2.0-win-x64.exe)
 - [SHA-256 校验文件](https://github.com/yxccai/dsh-desktop/releases/download/v0.2.0/SHA256SUMS-0.2.0.txt)
 
-当前版本尚未进行代码签名，Windows 可能提示“未知发布者”。请只从本仓库下载。
-
 ## 工作方式
 
 DSH Desktop 会自动选择可用环境：
@@ -35,8 +31,6 @@ DSH Desktop 会自动选择可用环境：
 4. 使用应用内置的 DSH Runtime。
 
 已有用户通常可以继续使用原来的 `DSH_HOME`、会话、Agent Preset 和持久化插件；新用户无需预先安装 DSH 或 Node.js。
-
-> 用户仍需自行配置可用的模型服务或 API Key。
 
 ## 插件兼容
 

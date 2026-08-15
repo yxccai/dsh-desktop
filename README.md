@@ -4,8 +4,6 @@ English | [简体中文](README.zh-CN.md)
 
 An unofficial open-source desktop app for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness), designed to provide a simpler and more convenient desktop experience.
 
-> This community project is not affiliated with or endorsed by DeepSeek.
-
 ## Highlights
 
 - **One-click setup**: Install and launch on Windows without manual command-line setup.
@@ -23,8 +21,6 @@ Download from [GitHub Releases](https://github.com/yxccai/dsh-desktop/releases):
 - [Windows x64 Portable](https://github.com/yxccai/dsh-desktop/releases/download/v0.2.0/DSH-Desktop-Portable-0.2.0-win-x64.exe)
 - [SHA-256 checksums](https://github.com/yxccai/dsh-desktop/releases/download/v0.2.0/SHA256SUMS-0.2.0.txt)
 
-This preview is not code-signed yet, so Windows may display an “Unknown publisher” warning. Download only from this repository.
-
 ## How it works
 
 DSH Desktop automatically selects an available runtime:
@@ -35,8 +31,6 @@ DSH Desktop automatically selects an available runtime:
 4. Fall back to the bundled DSH runtime.
 
 Existing users can usually keep their original `DSH_HOME`, sessions, Agent Presets, and persistent plugins. New users do not need to install DSH or Node.js first.
-
-> Users still need to configure their own model provider or API key.
 
 ## Plugin compatibility
 
