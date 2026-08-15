@@ -75,14 +75,18 @@ test('rejects Git operations when workspace is nested below repository root', as
 test('reports real git changes, diffs, discard, and snapshots', async (t) => {
   const { workspace, manager } = fixture(t, true);
   const initial = await manager.snapshot(workspace, '开始前', 0);
+  const duplicate = await manager.snapshot(workspace, '无文件变化的回复', 1);
+  assert.equal(duplicate[0].label, '无文件变化的回复');
   fs.writeFileSync(path.join(workspace, 'src', 'app.js'), 'console.log("two")\n');
   fs.writeFileSync(path.join(workspace, 'new.txt'), 'new\n');
   const status = await manager.gitStatus(workspace);
   assert.equal(status.changes.length, 2);
   const diff = await manager.gitDiff(workspace, 'src/app.js');
   assert.match(diff.content, /console\.log\("two"\)/);
-  const history = await manager.snapshot(workspace, '回复 1', 1);
-  assert.equal(history[0].turn, 1);
+  const history = await manager.snapshot(workspace, '回复 2', 2);
+  assert.equal(history[0].turn, 2);
+  const turnDiff = await manager.snapshotDiff(workspace, history[0].id, 'src/app.js');
+  assert.match(turnDiff.content, /console\.log\("two"\)/);
   await manager.revertSnapshot(workspace, initial[0].id);
   assert.equal(fs.readFileSync(path.join(workspace, 'src', 'app.js'), 'utf8').replaceAll('\r\n', '\n'), 'console.log("one")\n');
   assert.equal(fs.existsSync(path.join(workspace, 'new.txt')), false);

@@ -205,7 +205,7 @@ class ProjectPanelManager {
       return { path: clean, staged: false, content: `diff --git a/${clean} b/${clean}\nnew file mode 100644\n--- /dev/null\n+++ b/${clean}\n@@ -0,0 +1,${content.split(/\r?\n/).length} @@\n${content.split(/\r?\n/).map((line) => `+${line}`).join('\n')}` };
     }
     const useStaged = staged || (change && change.index !== ' ' && change.index !== '?' && change.worktree === ' ');
-    const args = ['diff','--no-ext-diff','--no-color'];
+    const args = ['diff','--no-ext-diff','--no-color','--unified=999999'];
     if (useStaged) args.push('--cached');
     args.push('--', clean);
     const { stdout } = await this.git(root, args, { maxBuffer: 8 * 1024 * 1024 });
@@ -249,7 +249,6 @@ class ProjectPanelManager {
       await this.git(root, ['add','-A'], { env });
       const tree = (await this.git(root, ['write-tree'], { env })).stdout.trim();
       const history = this.history(root);
-      if (history[0]?.tree === tree) return history;
       const id = crypto.randomUUID();
       await this.git(root, ['update-ref', `refs/dsh-desktop/snapshots/${id}`, tree]);
       history.unshift({ id, tree, label: String(label || '修改快照').slice(0,120), turn: Number.isInteger(turn) ? turn : null, createdAt: new Date().toISOString() });
@@ -265,6 +264,21 @@ class ProjectPanelManager {
   async snapshot(rootValue, label, turn) {
     const root = this.resolveRoot(rootValue);
     return this.enqueue(root, () => this.createSnapshot(root, label, turn));
+  }
+
+  async snapshotDiff(rootValue, snapshotId, relative) {
+    const root = await this.requireRepoRoot(rootValue);
+    const history = this.history(root);
+    const index = history.findIndex((item) => item.id === snapshotId);
+    if (index < 0) throw new Error('找不到修改快照');
+    const current = history[index];
+    const previous = history[index + 1];
+    if (!previous) return { path: relative || '', staged: false, content: '' };
+    if (!/^[0-9a-f]{40,64}$/.test(String(current.tree)) || !/^[0-9a-f]{40,64}$/.test(String(previous.tree))) throw new Error('修改快照无效');
+    const args = ['diff','--binary','--no-color','--unified=999999',previous.tree,current.tree];
+    if (relative) { const { relative: clean } = this.resolvePath(root, relative); args.push('--',clean); }
+    const { stdout } = await this.git(root, args, { maxBuffer: 16 * 1024 * 1024 });
+    return { path: relative || '', staged: false, content: stdout };
   }
 
   async revertSnapshot(rootValue, snapshotId) {
