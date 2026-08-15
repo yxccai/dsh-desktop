@@ -26,6 +26,7 @@ contextBridge.exposeInMainWorld('dshDesktop', Object.freeze({
     history: (root) => call('project-panel:history', { root }),
     snapshot: (root, label, turn) => call('project-panel:snapshot', { root, label, turn }),
     snapshotDiff: (root, id, path) => call('project-panel:snapshot-diff', { root, id, path }),
+    committedFileDiff: (root, path) => call('project-panel:committed-file-diff', { root, path }),
     revertSnapshotFile: (root, id, path) => call('project-panel:revert-snapshot-file', { root, id, path }),
     revertSnapshot: (root, id) => call('project-panel:revert-snapshot', { root, id }),
     openExternal: (root, path) => call('project-panel:open-external', { root, path }),

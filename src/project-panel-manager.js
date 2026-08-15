@@ -212,6 +212,13 @@ class ProjectPanelManager {
     return { path: clean, staged: useStaged, content: stdout };
   }
 
+  async committedFileDiff(rootValue, relative) {
+    const { root, relative: clean } = this.resolvePath(rootValue, relative);
+    await this.requireRepoRoot(root);
+    const { stdout } = await this.git(root, ['log','-1','-p','--no-ext-diff','--no-color','--format=','--unified=999999','--',clean], { maxBuffer: 16 * 1024 * 1024 });
+    return { path: clean, staged: false, content: stdout };
+  }
+
   async discard(rootValue, relative) {
     const { root, target, relative: clean } = this.resolvePath(rootValue, relative);
     await this.requireRepoRoot(root);
@@ -251,7 +258,8 @@ class ProjectPanelManager {
       const history = this.history(root);
       const id = crypto.randomUUID();
       await this.git(root, ['update-ref', `refs/dsh-desktop/snapshots/${id}`, tree]);
-      history.unshift({ id, tree, label: String(label || '修改快照').slice(0,120), turn: Number.isInteger(turn) ? turn : null, createdAt: new Date().toISOString() });
+      const baseTree = history.find((item) => item.tree !== tree)?.tree || history[0]?.tree || null;
+      history.unshift({ id, tree, baseTree, label: String(label || '修改快照').slice(0,120), turn: Number.isInteger(turn) ? turn : null, createdAt: new Date().toISOString() });
       const trimmed = history.slice(0,50);
       for (const removed of history.slice(50)) {
         try { await this.git(root, ['update-ref','-d',`refs/dsh-desktop/snapshots/${removed.id}`]); } catch {}
@@ -272,10 +280,10 @@ class ProjectPanelManager {
     const index = history.findIndex((item) => item.id === snapshotId);
     if (index < 0) throw new Error('找不到修改快照');
     const current = history[index];
-    const previous = history[index + 1];
-    if (!previous) return { path: relative || '', staged: false, content: '' };
-    if (!/^[0-9a-f]{40,64}$/.test(String(current.tree)) || !/^[0-9a-f]{40,64}$/.test(String(previous.tree))) throw new Error('修改快照无效');
-    const args = ['diff','--binary','--no-color','--unified=999999',previous.tree,current.tree];
+    const previousTree = current.baseTree || history.slice(index + 1).find((item) => item.tree !== current.tree)?.tree;
+    if (!previousTree) return { path: relative || '', staged: false, content: '' };
+    if (!/^[0-9a-f]{40,64}$/.test(String(current.tree)) || !/^[0-9a-f]{40,64}$/.test(String(previousTree))) throw new Error('修改快照无效');
+    const args = ['diff','--binary','--no-color','--unified=999999',previousTree,current.tree];
     if (relative) { const { relative: clean } = this.resolvePath(root, relative); args.push('--',clean); }
     const { stdout } = await this.git(root, args, { maxBuffer: 16 * 1024 * 1024 });
     return { path: relative || '', staged: false, content: stdout };
@@ -285,18 +293,18 @@ class ProjectPanelManager {
     const root = await this.requireRepoRoot(rootValue);
     const history = this.history(root);
     const index = history.findIndex((item) => item.id === snapshotId);
-    if (index < 0 || !history[index + 1]) throw new Error('找不到修改前快照');
-    const previous = history[index + 1];
-    if (!/^[0-9a-f]{40,64}$/.test(String(previous.tree))) throw new Error('修改前快照无效');
+    if (index < 0) throw new Error('找不到修改前快照');
+    const current = history[index];
+    const previousTree = current.baseTree || history.slice(index + 1).find((item) => item.tree !== current.tree)?.tree;
+    if (!/^[0-9a-f]{40,64}$/.test(String(previousTree))) throw new Error('修改前快照无效');
     const { target, relative: clean } = this.resolvePath(root, relative);
     try {
-      const { stdout } = await this.git(root, ['show', `${previous.tree}:${clean}`], { maxBuffer: 16 * 1024 * 1024, encoding: 'buffer' });
+      const { stdout } = await this.git(root, ['show', `${previousTree}:${clean}`], { maxBuffer: 16 * 1024 * 1024, encoding: 'buffer' });
       fs.mkdirSync(path.dirname(target), { recursive: true });
       const temp = `${target}.dsh-${crypto.randomUUID()}.tmp`;
       fs.writeFileSync(temp, stdout);
       fs.renameSync(temp, target);
     } catch (error) {
-      const current = history[index];
       try { await this.git(root, ['cat-file','-e',`${current.tree}:${clean}`]); fs.rmSync(target, { recursive: true, force: true }); }
       catch { throw error; }
     }
