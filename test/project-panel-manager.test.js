@@ -87,6 +87,9 @@ test('reports real git changes, diffs, discard, and snapshots', async (t) => {
   assert.equal(history[0].turn, 2);
   const turnDiff = await manager.snapshotDiff(workspace, history[0].id, 'src/app.js');
   assert.match(turnDiff.content, /console\.log\("two"\)/);
+  await manager.revertSnapshotFile(workspace, history[0].id, 'src/app.js');
+  assert.equal(fs.readFileSync(path.join(workspace, 'src', 'app.js'), 'utf8'), 'console.log("one")\n');
+  fs.writeFileSync(path.join(workspace, 'src', 'app.js'), 'console.log("two")\n');
   await manager.revertSnapshot(workspace, initial[0].id);
   assert.equal(fs.readFileSync(path.join(workspace, 'src', 'app.js'), 'utf8').replaceAll('\r\n', '\n'), 'console.log("one")\n');
   assert.equal(fs.existsSync(path.join(workspace, 'new.txt')), false);

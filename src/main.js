@@ -165,6 +165,7 @@ function registerProjectPanelIpc() {
   handle('project-panel:history', (x) => projectPanelManager.history(x.root));
   handle('project-panel:snapshot', (x) => projectPanelManager.snapshot(x.root, x.label, x.turn));
   handle('project-panel:snapshot-diff', (x) => projectPanelManager.snapshotDiff(x.root, x.id, x.path));
+  handle('project-panel:revert-snapshot-file', (x) => projectPanelManager.revertSnapshotFile(x.root, x.id, x.path));
   handle('project-panel:revert-snapshot', (x) => projectPanelManager.revertSnapshot(x.root, x.id));
   handle('project-panel:open-external', async (x) => {
     const { target } = projectPanelManager.resolvePath(x.root, x.path);

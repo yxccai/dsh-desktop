@@ -281,6 +281,28 @@ class ProjectPanelManager {
     return { path: relative || '', staged: false, content: stdout };
   }
 
+  async revertSnapshotFile(rootValue, snapshotId, relative) {
+    const root = await this.requireRepoRoot(rootValue);
+    const history = this.history(root);
+    const index = history.findIndex((item) => item.id === snapshotId);
+    if (index < 0 || !history[index + 1]) throw new Error('找不到修改前快照');
+    const previous = history[index + 1];
+    if (!/^[0-9a-f]{40,64}$/.test(String(previous.tree))) throw new Error('修改前快照无效');
+    const { target, relative: clean } = this.resolvePath(root, relative);
+    try {
+      const { stdout } = await this.git(root, ['show', `${previous.tree}:${clean}`], { maxBuffer: 16 * 1024 * 1024, encoding: 'buffer' });
+      fs.mkdirSync(path.dirname(target), { recursive: true });
+      const temp = `${target}.dsh-${crypto.randomUUID()}.tmp`;
+      fs.writeFileSync(temp, stdout);
+      fs.renameSync(temp, target);
+    } catch (error) {
+      const current = history[index];
+      try { await this.git(root, ['cat-file','-e',`${current.tree}:${clean}`]); fs.rmSync(target, { recursive: true, force: true }); }
+      catch { throw error; }
+    }
+    return this.gitStatus(root);
+  }
+
   async revertSnapshot(rootValue, snapshotId) {
     const root = this.resolveRoot(rootValue);
     return this.enqueue(root, async () => {

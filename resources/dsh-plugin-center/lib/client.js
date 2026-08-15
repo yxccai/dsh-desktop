@@ -34,10 +34,21 @@ window.__ModuleLoader__.load({
       return items.find((item) => item.sessionIds.includes(sessionId)) || (summary?.cwd ? { path: summary.cwd, title: summary.cwd.split(/[\\/]/).filter(Boolean).pop() } : null);
     }
 
+    function relativeTurnPath(root, value) {
+      const normalizedRoot = String(root || '').replaceAll('\\', '/').replace(/\/$/, '');
+      const normalized = String(value || '').replaceAll('\\', '/');
+      if (/^[A-Za-z]:\//.test(normalized) || normalized.startsWith('/')) {
+        if (normalized.toLowerCase().startsWith(`${normalizedRoot.toLowerCase()}/`)) return normalized.slice(normalizedRoot.length + 1);
+        return null;
+      }
+      if (normalized === '..' || normalized.startsWith('../') || normalized.includes('/../')) return null;
+      return normalized.replace(/^\.\//, '');
+    }
+
     function ConversationFiles({ matched, useSessions, sessionId }) {
       const summary = useSessions((state) => sessionId ? state.byId[sessionId] : undefined);
       const root = summary?.cwd;
-      const paths = matched?.paths || [];
+      const paths = (matched?.paths || []).map((value) => relativeTurnPath(root, value)).filter(Boolean);
       React.useEffect(() => {
         if (!root || !paths.length) return;
         turnFileGroups.set(`${root}\u0000${matched.turn}`, { root, turn: matched.turn, paths });
@@ -122,8 +133,10 @@ window.__ModuleLoader__.load({
       const diff = async (item) => { const data = await api.projectPanel.gitDiff(root, item.path, false); onOpen({ path: item.path, name: item.path.split('/').pop(), kind: 'diff', content: data.content, editable: false }); };
       const discard = async (item) => { if (confirm(`撤销 ${item.path} 的工作区修改？`)) { await api.projectPanel.discard(root, item.path); refresh(); } };
       const snapshot = async () => { try { const next = await api.projectPanel.snapshot(root, `手动快照 ${new Date().toLocaleString()}`, null); setHistory(next); setNotice(`快照已记录：${next[0]?.label || ''}`); setError(''); } catch (e) { setError(e.message); } };
+      const turnDiff = async (group, filePath) => { try { const snap = history.find((item) => item.turn === group.turn); if (!snap) return api.projectPanel.read(root, filePath).then(onOpen); const data = await api.projectPanel.snapshotDiff(root, snap.id, filePath); onOpen({ path: `回复 ${group.turn} · ${filePath}`, name: filePath.split('/').pop(), kind: 'diff', content: data.content || '该文件没有可显示的变更。', editable: false }); } catch (e) { setError(e.message); } };
+      const undoTurnFile = async (group, filePath) => { const snap = history.find((item) => item.turn === group.turn); if (!snap) return setError('找不到该回复对应的修改快照'); if (!confirm(`撤销回复 ${group.turn} 对 ${filePath} 的修改？\n这会在当前工作区产生反向变更，不会改写 Git 提交。`)) return; try { await api.projectPanel.revertSnapshotFile(root, snap.id, filePath); await refresh(); setNotice(`已撤销：${filePath}`); window.dispatchEvent(new CustomEvent('dsh-desktop-project-refresh', { detail: { root } })); } catch (e) { setError(e.message); } };
       const revert = async (item) => { if (confirm(`恢复项目工作区到“${item.label}”？\n只影响 ${root}，不会修改 Windows 桌面的副本。`)) { try { await api.projectPanel.revertSnapshot(root, item.id); await refresh(); setNotice(`项目已恢复到：${item.label}`); window.dispatchEvent(new CustomEvent('dsh-desktop-project-refresh', { detail: { root } })); } catch (e) { setError(e.message); } } };
-      return h("div", { className: "dpp-changes" }, error ? h("div", { className: "dpp-error" }, error) : null, notice ? h("div", { className: "dpp-notice" }, notice) : null, h("div", { className: "dpp-section-title" }, h("strong", null, "本次对话变更（提交后仍保留）")), ...turnChanges.flatMap((group) => [h("div", { className: "dpp-turn-label", key: `turn-${group.turn}` }, `回复 ${group.turn}`), ...group.paths.map((filePath) => h("button", { className: "dpp-turn-file", key: `${group.turn}-${filePath}`, onClick: () => api.projectPanel.read(root, filePath).then(onOpen).catch((e) => setError(e.message)) }, filePath))]), h("div", { className: "dpp-section-title" }, h("strong", null, `Git 工作区 ${status.branch ? `· ${status.branch}` : ''}`), h("button", { onClick: refresh }, "刷新"), h("button", { onClick: snapshot }, "记录快照")), ...status.changes.map((item) => h("div", { className: "dpp-change", key: item.path }, h("button", { onClick: () => diff(item) }, h("span", { className: "dpp-status" }, `${item.index}${item.worktree}`), item.path), h("button", { className: "dpp-danger", onClick: () => discard(item) }, "撤销"))), h("div", { className: "dpp-section-title" }, h("strong", null, "修改快照")), ...history.map((item) => h("div", { className: "dpp-history", key: item.id }, h("div", null, h("strong", null, item.turn ? `回复 ${item.turn}` : item.label), h("small", null, new Date(item.createdAt).toLocaleString())), h("button", { onClick: () => revert(item) }, "恢复"))));
+      return h("div", { className: "dpp-changes" }, error ? h("div", { className: "dpp-error" }, error) : null, notice ? h("div", { className: "dpp-notice" }, notice) : null, h("div", { className: "dpp-section-title" }, h("strong", null, "本次对话变更（提交后仍保留）")), ...turnChanges.flatMap((group) => [h("div", { className: "dpp-turn-label", key: `turn-${group.turn}` }, `回复 ${group.turn}`), ...group.paths.map((filePath) => h("div", { className: "dpp-change", key: `${group.turn}-${filePath}` }, h("button", { onClick: () => turnDiff(group, filePath) }, h("span", { className: "dpp-status" }, "M "), filePath), h("button", { className: "dpp-danger", onClick: () => undoTurnFile(group, filePath) }, "撤销")))]), h("div", { className: "dpp-section-title" }, h("strong", null, `Git 工作区 ${status.branch ? `· ${status.branch}` : ''}`), h("button", { onClick: refresh }, "刷新"), h("button", { onClick: snapshot }, "记录快照")), ...status.changes.map((item) => h("div", { className: "dpp-change", key: item.path }, h("button", { onClick: () => diff(item) }, h("span", { className: "dpp-status" }, `${item.index}${item.worktree}`), item.path), h("button", { className: "dpp-danger", onClick: () => discard(item) }, "撤销"))), h("div", { className: "dpp-section-title" }, h("strong", null, "修改快照")), ...history.map((item) => h("div", { className: "dpp-history", key: item.id }, h("div", null, h("strong", null, item.turn ? `回复 ${item.turn}` : item.label), h("small", null, new Date(item.createdAt).toLocaleString())), h("button", { onClick: () => revert(item) }, "恢复"))));
     }
 
     function ProjectPanel({ useSessions, useWorkspaces }) {
