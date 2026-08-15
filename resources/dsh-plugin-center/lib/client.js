@@ -113,12 +113,12 @@ window.__ModuleLoader__.load({
     function Changes({ root, onOpen }) {
       const [status, setStatus] = React.useState({ changes: [], branch: "" });
       const [history, setHistory] = React.useState([]);
-      const [turnChanges, setTurnChanges] = React.useState([]);
+      const [turnChanges, setTurnChanges] = React.useState(() => Array.from(turnFileGroups.values()).filter((item) => item.root === root).sort((a, b) => b.turn - a.turn));
       const [error, setError] = React.useState("");
       const [notice, setNotice] = React.useState("");
       const refresh = async () => { try { setStatus(await api.projectPanel.gitStatus(root)); setHistory(await api.projectPanel.history(root)); setError(""); } catch (e) { setError(e.message); } };
       React.useEffect(() => { refresh(); }, [root]);
-      React.useEffect(() => { const listener = (event) => { if (event.detail.root === root) setTurnChanges((old) => [{ turn: event.detail.turn, paths: event.detail.paths }, ...old.filter((x) => x.turn !== event.detail.turn)].slice(0, 20)); }; window.addEventListener('dsh-desktop-turn-files', listener); return () => window.removeEventListener('dsh-desktop-turn-files', listener); }, [root]);
+      React.useEffect(() => { setTurnChanges(Array.from(turnFileGroups.values()).filter((item) => item.root === root).sort((a, b) => b.turn - a.turn).slice(0, 20)); const listener = (event) => { if (event.detail.root === root) setTurnChanges((old) => [{ turn: event.detail.turn, paths: event.detail.paths }, ...old.filter((x) => x.turn !== event.detail.turn)].sort((a, b) => b.turn - a.turn).slice(0, 20)); }; window.addEventListener('dsh-desktop-turn-files', listener); return () => window.removeEventListener('dsh-desktop-turn-files', listener); }, [root]);
       const diff = async (item) => { const data = await api.projectPanel.gitDiff(root, item.path, false); onOpen({ path: item.path, name: item.path.split('/').pop(), kind: 'diff', content: data.content, editable: false }); };
       const discard = async (item) => { if (confirm(`撤销 ${item.path} 的工作区修改？`)) { await api.projectPanel.discard(root, item.path); refresh(); } };
       const snapshot = async () => { try { const next = await api.projectPanel.snapshot(root, `手动快照 ${new Date().toLocaleString()}`, null); setHistory(next); setNotice(`快照已记录：${next[0]?.label || ''}`); setError(''); } catch (e) { setError(e.message); } };
