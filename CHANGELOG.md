@@ -3,7 +3,9 @@
 ## Unreleased - Project Panel Preview
 
 - Add an optional Codex-inspired project panel beside project conversations without replacing DSH tool details.
-- Add a searchable lazy file tree and multi-tab previews for Markdown, HTML, source code, diff, CSV, PDF, images, and text.
+- Show only files actually modified or produced by each conversation turn; remove the full project file tree from the panel.
+- Open conversation files in top filename tabs with close buttons and multi-tab previews for Markdown, HTML, source code, diff, CSV, PDF, images, and text.
+- Shrink the chat layout while the panel is open instead of covering the conversation.
 - Add source/preview switching, split editing, atomic saves, external-change protection, and system opening for Office/binary files.
 - Add real Git status, file diffs, safe single-file discard, and assistant-turn project snapshots that do not modify the user's Git index.
 - Add recoverable snapshot restore with an automatic pre-restore checkpoint.

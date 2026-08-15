@@ -36,7 +36,7 @@ Existing users can usually keep their original `DSH_HOME`, sessions, Agent Prese
 
 ## Project panel
 
-Project sessions include an optional right-side panel with a searchable file tree, multi-tab previews for Markdown, HTML, source code, diff, CSV, PDF, images, and text, split editing with conflict-aware atomic saves, and real Git status/diff/discard controls. Panel width, collapsed state, and active section are stored per project. Completed assistant turns produce recoverable Git tree snapshots without modifying the repository index; restoring a snapshot first records the current state as a recovery point.
+Files actually modified or produced by a conversation appear below the relevant response. Clicking one opens it in a right-side multi-tab preview with a filename and close button; the chat layout shrinks instead of being covered. Previews support Markdown, HTML, source code, diff, CSV, PDF, images, and text, plus split editing with conflict-aware atomic saves and real Git status/diff/discard controls. Panel width, collapsed state, and active section are stored per project. Completed assistant turns produce recoverable Git tree snapshots without modifying the repository index; restoring a snapshot first records the current state as a recovery point.
 
 Office files currently open through their system application; native DOCX/XLSX/PPTX rendering remains planned.
 
