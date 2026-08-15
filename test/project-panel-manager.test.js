@@ -64,6 +64,14 @@ test('persists panel state per project with clamped width', (t) => {
   assert.deepEqual(manager.getState(workspace), { width: 1000, collapsed: true, activeTab: 'changes' });
 });
 
+test('rejects Git operations when workspace is nested below repository root', async (t) => {
+  const { root, workspace, manager } = fixture(t, true);
+  const nested = path.join(workspace, 'src');
+  await assert.rejects(() => manager.gitStatus(nested), /仓库根必须与 DSH 工作区根一致/);
+  await assert.rejects(() => manager.snapshot(nested, 'unsafe', 1), /仓库根必须与 DSH 工作区根一致/);
+  assert.equal(fs.existsSync(path.join(root, 'state', 'history')), false);
+});
+
 test('reports real git changes, diffs, discard, and snapshots', async (t) => {
   const { workspace, manager } = fixture(t, true);
   const initial = await manager.snapshot(workspace, '开始前', 0);
@@ -81,4 +89,18 @@ test('reports real git changes, diffs, discard, and snapshots', async (t) => {
   fs.writeFileSync(path.join(workspace, 'src', 'app.js'), 'console.log("two")\n');
   await manager.discard(workspace, 'src/app.js');
   assert.equal(fs.readFileSync(path.join(workspace, 'src', 'app.js'), 'utf8').replaceAll('\r\n', '\n'), 'console.log("one")\n');
+});
+
+test('snapshot restore preflight failure leaves workspace unchanged', async (t) => {
+  const { workspace, manager } = fixture(t, true);
+  const baseline = await manager.snapshot(workspace, 'baseline', 0);
+  fs.writeFileSync(path.join(workspace, 'src', 'app.js'), 'unrelated content\n');
+  const before = fs.readFileSync(path.join(workspace, 'src', 'app.js'), 'utf8');
+  const originalGit = manager.git.bind(manager);
+  manager.git = async (root, args, options) => {
+    if (args[0] === 'apply' && args[1] === '--check') throw new Error('simulated preflight rejection');
+    return originalGit(root, args, options);
+  };
+  await assert.rejects(() => manager.revertSnapshot(workspace, baseline[0].id), /preflight/);
+  assert.equal(fs.readFileSync(path.join(workspace, 'src', 'app.js'), 'utf8'), before);
 });

@@ -10,6 +10,8 @@
 - Persist width, collapsed state, and active panel section per project; support drag resize and double-click reset.
 - Confine filesystem IPC to canonical roots registered in the DSH Workspace registry, reject escaping symlinks, cap preview sizes, and avoid shell command execution.
 - Disable interactive Git prompts, bound Git command duration/output, and keep Git invocation on fixed argument arrays.
+- Require the DSH workspace root to exactly match the Git repository root, preventing nested workspaces from reaching ancestor repository files.
+- Serialize snapshot mutations and preflight snapshot patches before applying them, so a rejected restore leaves the workspace unchanged.
 
 ## 0.3.0 - Plugin Center Preview
 

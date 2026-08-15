@@ -171,8 +171,16 @@ class ProjectPanelManager {
     }
   }
 
-  async gitStatus(rootValue) {
+  async requireRepoRoot(rootValue) {
     const root = this.resolveRoot(rootValue);
+    const top = (await this.git(root, ['rev-parse','--show-toplevel'])).stdout.trim();
+    const repo = fs.realpathSync.native(path.resolve(top));
+    if (repo.toLowerCase() !== root.toLowerCase()) throw new Error('Git 仓库根必须与 DSH 工作区根一致');
+    return root;
+  }
+
+  async gitStatus(rootValue) {
+    const root = await this.requireRepoRoot(rootValue);
     let branch = '';
     try { branch = (await this.git(root, ['branch','--show-current'])).stdout.trim(); } catch {}
     const { stdout } = await this.git(root, ['status','--porcelain=v1','-z','--untracked-files=all']);
@@ -189,6 +197,7 @@ class ProjectPanelManager {
 
   async gitDiff(rootValue, relative, staged = false) {
     const { root, target, relative: clean } = this.resolvePath(rootValue, relative);
+    await this.requireRepoRoot(root);
     const status = await this.gitStatus(root);
     const change = status.changes.find((item) => item.path === clean);
     if (change?.untracked) {
@@ -205,6 +214,7 @@ class ProjectPanelManager {
 
   async discard(rootValue, relative) {
     const { root, target, relative: clean } = this.resolvePath(rootValue, relative);
+    await this.requireRepoRoot(root);
     const status = await this.gitStatus(root);
     const change = status.changes.find((item) => item.path === clean);
     if (!change) throw new Error('没有可撤销的变更');
@@ -222,51 +232,63 @@ class ProjectPanelManager {
     catch { return []; }
   }
 
-  async snapshot(rootValue, label, turn) {
-    const root = this.resolveRoot(rootValue);
+  enqueue(root, operation) {
     const queue = this.queues.get(root) || Promise.resolve();
-    const task = queue.then(async () => {
-      await this.git(root, ['rev-parse','--is-inside-work-tree']);
-      const tempIndex = path.join(this.stateRoot, 'indexes', `${this.projectKey(root)}-${process.pid}-${Date.now()}.index`);
-      fs.mkdirSync(path.dirname(tempIndex), { recursive: true });
-      const env = { ...process.env, GIT_INDEX_FILE: tempIndex };
-      try {
-        try { await this.git(root, ['read-tree','HEAD'], { env }); } catch { await this.git(root, ['read-tree','--empty'], { env }); }
-        await this.git(root, ['add','-A'], { env });
-        const tree = (await this.git(root, ['write-tree'], { env })).stdout.trim();
-        const history = this.history(root);
-        if (history[0]?.tree === tree) return history;
-        const id = crypto.randomUUID();
-        await this.git(root, ['update-ref', `refs/dsh-desktop/snapshots/${id}`, tree]);
-        history.unshift({ id, tree, label: String(label || '修改快照').slice(0,120), turn: Number.isInteger(turn) ? turn : null, createdAt: new Date().toISOString() });
-        const trimmed = history.slice(0,50);
-        for (const removed of history.slice(50)) {
-          try { await this.git(root, ['update-ref','-d',`refs/dsh-desktop/snapshots/${removed.id}`]); } catch {}
-        }
-        atomicJson(this.historyFile(root), trimmed);
-        return trimmed;
-      } finally { fs.rmSync(tempIndex, { force: true }); }
-    });
+    const task = queue.then(operation);
     this.queues.set(root, task.catch(() => {}));
     return task;
   }
 
+  async createSnapshot(root, label, turn) {
+    await this.requireRepoRoot(root);
+    const tempIndex = path.join(this.stateRoot, 'indexes', `${this.projectKey(root)}-${process.pid}-${Date.now()}-${crypto.randomUUID()}.index`);
+    fs.mkdirSync(path.dirname(tempIndex), { recursive: true });
+    const env = { ...process.env, GIT_INDEX_FILE: tempIndex };
+    try {
+      try { await this.git(root, ['read-tree','HEAD'], { env }); } catch { await this.git(root, ['read-tree','--empty'], { env }); }
+      await this.git(root, ['add','-A'], { env });
+      const tree = (await this.git(root, ['write-tree'], { env })).stdout.trim();
+      const history = this.history(root);
+      if (history[0]?.tree === tree) return history;
+      const id = crypto.randomUUID();
+      await this.git(root, ['update-ref', `refs/dsh-desktop/snapshots/${id}`, tree]);
+      history.unshift({ id, tree, label: String(label || '修改快照').slice(0,120), turn: Number.isInteger(turn) ? turn : null, createdAt: new Date().toISOString() });
+      const trimmed = history.slice(0,50);
+      for (const removed of history.slice(50)) {
+        try { await this.git(root, ['update-ref','-d',`refs/dsh-desktop/snapshots/${removed.id}`]); } catch {}
+      }
+      atomicJson(this.historyFile(root), trimmed);
+      return trimmed;
+    } finally { fs.rmSync(tempIndex, { force: true }); }
+  }
+
+  async snapshot(rootValue, label, turn) {
+    const root = this.resolveRoot(rootValue);
+    return this.enqueue(root, () => this.createSnapshot(root, label, turn));
+  }
+
   async revertSnapshot(rootValue, snapshotId) {
     const root = this.resolveRoot(rootValue);
-    const history = this.history(root);
-    const target = history.find((item) => item.id === snapshotId);
-    if (!target) throw new Error('找不到修改快照');
-    const before = await this.snapshot(root, '撤销前自动备份', null);
-    const currentTree = before[0]?.tree;
-    if (!currentTree) throw new Error('无法创建撤销前快照');
-    const patch = (await this.git(root, ['diff','--binary',currentTree,target.tree], { maxBuffer: 32 * 1024 * 1024, encoding: 'buffer' })).stdout;
-    if (!patch?.length) return this.history(root);
-    const patchFile = path.join(this.stateRoot, 'patches', `${crypto.randomUUID()}.patch`);
-    fs.mkdirSync(path.dirname(patchFile), { recursive: true });
-    fs.writeFileSync(patchFile, patch);
-    try { await this.git(root, ['apply','--binary',patchFile], { maxBuffer: 32 * 1024 * 1024 }); }
-    finally { fs.rmSync(patchFile, { force: true }); }
-    return this.snapshot(root, `已撤销到：${target.label}`, target.turn);
+    return this.enqueue(root, async () => {
+      await this.requireRepoRoot(root);
+      const history = this.history(root);
+      const target = history.find((item) => item.id === snapshotId);
+      if (!target || !/^[0-9a-f]{40,64}$/.test(String(target.tree))) throw new Error('找不到有效的修改快照');
+      await this.git(root, ['cat-file','-e',`${target.tree}^{tree}`]);
+      const before = await this.createSnapshot(root, '撤销前自动备份', null);
+      const currentTree = before[0]?.tree;
+      if (!currentTree) throw new Error('无法创建撤销前快照');
+      const patch = (await this.git(root, ['diff','--binary',currentTree,target.tree], { maxBuffer: 32 * 1024 * 1024, encoding: 'buffer' })).stdout;
+      if (!patch?.length) return this.history(root);
+      const patchFile = path.join(this.stateRoot, 'patches', `${crypto.randomUUID()}.patch`);
+      fs.mkdirSync(path.dirname(patchFile), { recursive: true });
+      fs.writeFileSync(patchFile, patch);
+      try {
+        await this.git(root, ['apply','--check','--binary',patchFile], { maxBuffer: 32 * 1024 * 1024 });
+        await this.git(root, ['apply','--binary',patchFile], { maxBuffer: 32 * 1024 * 1024 });
+      } finally { fs.rmSync(patchFile, { force: true }); }
+      return this.createSnapshot(root, `已撤销到：${target.label}`, target.turn);
+    });
   }
 }
 
