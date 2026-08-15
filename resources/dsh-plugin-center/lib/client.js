@@ -9,13 +9,26 @@ window.__ModuleLoader__.load({
     let projectPanelLayout = null;
     let projectPanelCurrentRoot = '';
     const turnFileGroups = new Map();
+    const OCEAN_THEME_ID = 'desktop-ocean-theme';
+    const OCEAN_TOKENS = {
+      '--dsw-alias-bg-base': { light: '#e9f7fb', dark: '#06131f' },
+      '--dsw-alias-bg-layer-1': { light: '#f5fcfe', dark: '#0b2030' },
+      '--dsw-alias-bg-layer-2': { light: '#dff3f8', dark: '#102b3d' },
+      '--dsw-alias-bg-overlay': { light: '#ffffff', dark: '#153447' },
+      '--dsw-alias-border-l1': { light: '#b9dce5', dark: '#21465b' },
+      '--dsw-alias-border-l2': { light: '#8fc7d5', dark: '#2c5d72' },
+      '--dsw-alias-brand-primary': { light: '#087f9d', dark: '#48d7ee' },
+      '--dsw-alias-label-primary': { light: '#0b2d3b', dark: '#e2f8fc' },
+      '--dsw-alias-label-secondary': { light: '#456b77', dark: '#94bac5' },
+      '--dsw-specific-sidebar-fill': { light: '#d8eff5', dark: '#081b29' }
+    };
     const h = React.createElement;
 
     function PluginCenterTab() {
       const [state, setState] = React.useState({ loading: true, data: null, error: "" });
       const refresh = async () => { try { setState({ loading: false, data: await api.pluginCenter.list(), error: "" }); } catch (error) { setState({ loading: false, data: null, error: error?.message || String(error) }); } };
       React.useEffect(() => { refresh(); }, []);
-      const act = async (action, id) => { try { setState({ loading: false, data: await api.pluginCenter[action](id), error: "" }); } catch (error) { setState((old) => ({ ...old, error: error?.message || String(error) })); } };
+      const act = async (action, id) => { try { setState({ loading: false, data: await api.pluginCenter[action](id), error: "" }); window.dispatchEvent(new Event('dsh-desktop-plugin-catalog-change')); } catch (error) { setState((old) => ({ ...old, error: error?.message || String(error) })); } };
       const button = (label, action, id, danger) => h("button", { className: danger ? "dpc-danger" : "", onClick: () => act(action, id) }, label);
       const cards = (state.data?.recommended || []).map((plugin) => {
         const actions = [];
@@ -233,11 +246,33 @@ window.__ModuleLoader__.load({
       return () => document.removeEventListener('click', listener, true);
     }
 
+    function applyManagedTheme(ctx) {
+      const theme = ctx.get('theme');
+      if (!theme || !api?.pluginCenter) return () => {};
+      let disposeTokens = null; let style = null; let cancelled = false;
+      const sync = async () => {
+        try {
+          const snapshot = await api.pluginCenter.list();
+          const item = snapshot.recommended?.find((entry) => entry.id === OCEAN_THEME_ID);
+          const enabled = item?.status === 'enabled';
+          if (enabled && !disposeTokens) {
+            disposeTokens = theme.overrideTokens('dsh-desktop-ocean-theme', OCEAN_TOKENS);
+            style = document.createElement('style'); style.dataset.dshDesktopTheme = OCEAN_THEME_ID;
+            style.textContent = `body{background:radial-gradient(circle at 78% 8%,rgba(38,190,214,.18),transparent 34%),linear-gradient(145deg,var(--dsw-alias-bg-base),color-mix(in srgb,var(--dsw-alias-bg-base) 82%,#027f9b)) fixed!important}body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background:linear-gradient(115deg,transparent 35%,rgba(73,215,238,.035) 50%,transparent 65%)}`;
+            document.head.appendChild(style);
+          } else if (!enabled && disposeTokens) { disposeTokens(); disposeTokens = null; style?.remove(); style = null; }
+        } catch (error) { console.error('managed theme sync failed', error); }
+      };
+      sync(); const listener = () => { if (!cancelled) sync(); }; window.addEventListener('dsh-desktop-plugin-catalog-change', listener);
+      return () => { cancelled = true; window.removeEventListener('dsh-desktop-plugin-catalog-change', listener); disposeTokens?.(); style?.remove(); };
+    }
+
     function apply(ctx) {
       const slots = ctx.get("slots");
       if (!slots || !api?.pluginCenter || !api?.projectPanel) return;
       ctx.effect(mountProjectColumn);
       ctx.effect(interceptProducedFileClicks);
+      ctx.effect(() => applyManagedTheme(ctx));
       ctx.effect(() => { const style = document.createElement("style"); style.textContent = css + `.dpp-preview-main{display:flex;flex-direction:column;flex:1;min-height:0}.dpp-conversation-files{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:8px;color:var(--dsw-alias-label-secondary);font-size:12px}.dpp-conversation-files button{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-brand-primary);border-radius:6px;padding:3px 7px;cursor:pointer}`; document.head.appendChild(style); return () => style.remove(); });
 
       slots.inject("settings.plugins.tab", () => slots.register({ name: "settings.plugins.tab", id: "desktop-center", order: 20, label: "插件中心" }, PluginCenterTab));

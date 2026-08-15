@@ -11,6 +11,17 @@
       "permissions": ["Persona prompt only"],
       "bundledDir": "desktop-writing",
       "digest": "89376a7ec4637e2b96bcbd35048ecbafdf7bf0051f82e72ae9ca0fe74a694789"
+    },
+    {
+      "id": "desktop-ocean-theme",
+      "name": "深海背景主题",
+      "description": "深海渐变背景、半透明层级和青色强调色，支持明暗模式并可随时停用。",
+      "version": "1.0.0",
+      "author": "DSH Desktop",
+      "source": "Bundled",
+      "permissions": ["Client theme token overrides", "Presentation only"],
+      "bundledDir": "desktop-ocean-theme",
+      "digest": "d6d38fdd1d4aafe5ce58f17a6be0b05f2295239185479296c5dfd9a81c5ef4b5"
     }
   ]
 }

@@ -1,6 +1,6 @@
 {
   "name": "@yxccai/dsh-desktop-plugin-center",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
@@ -14,7 +14,8 @@
         "@deepseek-ai/dsh-client-runtime",
         "@deepseek-ai/dsh-client-ui-settings-plugins",
         "@deepseek-ai/dsh-client-ui-conversation",
-        "@deepseek-ai/dsh-client-ui-layout"
+        "@deepseek-ai/dsh-client-ui-layout",
+        "@deepseek-ai/dsh-client-ui-theme"
       ],
       "platform": "web"
     }
