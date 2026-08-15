@@ -12,6 +12,9 @@ contextBridge.exposeInMainWorld('dshDesktop', Object.freeze({
     enable: (id) => call('plugin-center:enable', id),
     disable: (id) => call('plugin-center:disable', id),
     uninstall: (id) => call('plugin-center:uninstall', id),
+    backgroundGet: () => call('plugin-center:background-get'),
+    backgroundPick: () => call('plugin-center:background-pick'),
+    backgroundClear: () => call('plugin-center:background-clear'),
   }),
   projectPanel: Object.freeze({
     list: (root, path) => call('project-panel:list', { root, path }),

@@ -1,0 +1,8 @@
+# DSH Desktop Custom Background preset.
+- id: persona
+  name: '@deepseek-ai/dsh-persona'
+  config:
+    text: |-
+      Preserve the user's requested behavior and content. The DSH Desktop Custom
+      Background plugin changes presentation only and must not alter responses.
+    includeRuntimeContext: true

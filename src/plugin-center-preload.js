@@ -8,5 +8,8 @@ contextBridge.exposeInMainWorld('pluginCenter', Object.freeze({
   enable: (id) => ipcRenderer.invoke('plugin-center:enable', id),
   disable: (id) => ipcRenderer.invoke('plugin-center:disable', id),
   uninstall: (id) => ipcRenderer.invoke('plugin-center:uninstall', id),
+  backgroundGet: () => ipcRenderer.invoke('plugin-center:background-get'),
+  backgroundPick: () => ipcRenderer.invoke('plugin-center:background-pick'),
+  backgroundClear: () => ipcRenderer.invoke('plugin-center:background-clear'),
   openFolder: () => ipcRenderer.invoke('plugin-center:open-folder'),
 }));

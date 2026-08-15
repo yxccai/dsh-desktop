@@ -29,6 +29,13 @@ function userFile(name) {
   return path.join(app.getPath('userData'), name);
 }
 
+function atomicWriteJson(file, value) {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  const temp = `${file}.tmp-${process.pid}-${Date.now()}`;
+  fs.writeFileSync(temp, JSON.stringify(value, null, 2), 'utf8');
+  fs.renameSync(temp, file);
+}
+
 function log(message) {
   const line = `[${new Date().toISOString()}] ${message}\n`;
   try {
@@ -139,6 +146,19 @@ function registerPluginCenterIpc() {
   handle('plugin-center:enable', (id) => pluginManager.setEnabled(id, true));
   handle('plugin-center:disable', (id) => pluginManager.setEnabled(id, false));
   handle('plugin-center:uninstall', (id) => pluginManager.uninstall(id));
+  handle('plugin-center:background-get', () => {
+    const file = userFile('custom-background.json');
+    try { const meta = JSON.parse(fs.readFileSync(file, 'utf8')); const image = userFile(path.join('themes', meta.file)); if (!fs.existsSync(image)) return null; return { name: meta.name, dataUrl: `data:${meta.mime};base64,${fs.readFileSync(image).toString('base64')}` }; } catch { return null; }
+  });
+  handle('plugin-center:background-pick', async () => {
+    const result = await dialog.showOpenDialog(mainWindow || pluginCenterWindow, { title: '选择主题背景图片', properties: ['openFile'], filters: [{ name: '背景图片', extensions: ['png','jpg','jpeg','webp','gif'] }] });
+    if (result.canceled || result.filePaths.length !== 1) return null;
+    const source = result.filePaths[0]; const stat = fs.statSync(source); if (!stat.isFile() || stat.size > 20 * 1024 * 1024) throw new Error('背景图片必须小于 20 MB');
+    const ext = path.extname(source).toLowerCase(); const mime = ({ '.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.gif':'image/gif' })[ext]; if (!mime) throw new Error('不支持的背景图片格式');
+    const themes = userFile('themes'); fs.mkdirSync(themes, { recursive: true }); const name = `custom-background${ext}`; const target = path.join(themes, name); fs.copyFileSync(source, target); atomicWriteJson(userFile('custom-background.json'), { file: name, name: path.basename(source), mime });
+    return { name: path.basename(source), dataUrl: `data:${mime};base64,${fs.readFileSync(target).toString('base64')}` };
+  });
+  handle('plugin-center:background-clear', () => { try { const meta = JSON.parse(fs.readFileSync(userFile('custom-background.json'), 'utf8')); fs.rmSync(userFile(path.join('themes', meta.file)), { force: true }); } catch {} fs.rmSync(userFile('custom-background.json'), { force: true }); return null; });
   handle('plugin-center:open-folder', async () => {
     fs.mkdirSync(path.join(config.dshHome, '.agent-presets'), { recursive: true });
     const result = await shell.openPath(path.join(config.dshHome, '.agent-presets'));

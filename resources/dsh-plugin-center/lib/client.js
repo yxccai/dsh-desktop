@@ -10,6 +10,7 @@ window.__ModuleLoader__.load({
     let projectPanelCurrentRoot = '';
     const turnFileGroups = new Map();
     const OCEAN_THEME_ID = 'desktop-ocean-theme';
+    const CUSTOM_BACKGROUND_ID = 'desktop-custom-background';
     const OCEAN_TOKENS = {
       '--dsw-alias-bg-base': { light: '#e9f7fb', dark: '#06131f' },
       '--dsw-alias-bg-layer-1': { light: '#f5fcfe', dark: '#0b2030' },
@@ -30,12 +31,15 @@ window.__ModuleLoader__.load({
       React.useEffect(() => { refresh(); }, []);
       const act = async (action, id) => { try { setState({ loading: false, data: await api.pluginCenter[action](id), error: "" }); window.dispatchEvent(new Event('dsh-desktop-plugin-catalog-change')); } catch (error) { setState((old) => ({ ...old, error: error?.message || String(error) })); } };
       const button = (label, action, id, danger) => h("button", { className: danger ? "dpc-danger" : "", onClick: () => act(action, id) }, label);
+      const chooseBackground = async () => { try { await api.pluginCenter.backgroundPick(); window.dispatchEvent(new Event('dsh-desktop-plugin-catalog-change')); } catch (error) { setState((old) => ({ ...old, error: error?.message || String(error) })); } };
+      const clearBackground = async () => { try { await api.pluginCenter.backgroundClear(); window.dispatchEvent(new Event('dsh-desktop-plugin-catalog-change')); } catch (error) { setState((old) => ({ ...old, error: error?.message || String(error) })); } };
       const cards = (state.data?.recommended || []).map((plugin) => {
         const actions = [];
         if (plugin.status === "available") actions.push(button("安装", "install", plugin.id));
         if (plugin.status === "enabled" && plugin.owned) actions.push(button("停用", "disable", plugin.id), button("卸载", "uninstall", plugin.id, true));
         if (plugin.status === "disabled" && plugin.owned) actions.push(button("启用", "enable", plugin.id), button("卸载", "uninstall", plugin.id, true));
         const status = ({ available: "可安装", enabled: "已启用", disabled: "已停用", conflict: "名称冲突" })[plugin.status] || plugin.status;
+        if (plugin.id === CUSTOM_BACKGROUND_ID && plugin.status === 'enabled') actions.push(h('button', { key: 'pick', onClick: chooseBackground }, '选择背景图片'), h('button', { key: 'clear', onClick: clearBackground }, '清除图片'));
         return h("article", { className: "dpc-card", key: plugin.id }, h("div", { className: "dpc-head" }, h("strong", null, plugin.name), h("span", null, status)), h("p", null, plugin.description), h("div", { className: "dpc-meta" }, `${plugin.author} · ${plugin.version}`), h("div", { className: "dpc-actions" }, ...actions));
       });
       return h("section", { className: "dpc-root" }, h("div", { className: "dpc-title" }, h("div", null, h("h2", null, "插件中心"), h("p", null, "安装和管理 DSH Desktop 推荐的 Agent Preset。")), h("button", { onClick: refresh }, "刷新")), h("div", { className: "dpc-note" }, "变更会在新会话中生效，当前会话不会被中断。"), state.error ? h("div", { className: "dpc-error" }, state.error) : null, state.loading ? h("p", null, "正在加载…") : h("div", { className: "dpc-grid" }, ...cards));
@@ -249,7 +253,7 @@ window.__ModuleLoader__.load({
     function applyManagedTheme(ctx) {
       const theme = ctx.get('theme');
       if (!theme || !api?.pluginCenter) return () => {};
-      let disposeTokens = null; let style = null; let cancelled = false;
+      let disposeTokens = null; let style = null; let imageStyle = null; let cancelled = false;
       const sync = async () => {
         try {
           const snapshot = await api.pluginCenter.list();
@@ -261,10 +265,14 @@ window.__ModuleLoader__.load({
             style.textContent = `body{background:radial-gradient(circle at 78% 8%,rgba(38,190,214,.18),transparent 34%),linear-gradient(145deg,var(--dsw-alias-bg-base),color-mix(in srgb,var(--dsw-alias-bg-base) 82%,#027f9b)) fixed!important}body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background:linear-gradient(115deg,transparent 35%,rgba(73,215,238,.035) 50%,transparent 65%)}`;
             document.head.appendChild(style);
           } else if (!enabled && disposeTokens) { disposeTokens(); disposeTokens = null; style?.remove(); style = null; }
+          const custom = snapshot.recommended?.find((entry) => entry.id === CUSTOM_BACKGROUND_ID)?.status === 'enabled';
+          const background = custom ? await api.pluginCenter.backgroundGet() : null;
+          imageStyle?.remove(); imageStyle = null;
+          if (background?.dataUrl) { imageStyle = document.createElement('style'); imageStyle.dataset.dshDesktopTheme = CUSTOM_BACKGROUND_ID; imageStyle.textContent = `body{background-image:linear-gradient(rgba(4,12,20,.64),rgba(4,12,20,.72)),url(${JSON.stringify(background.dataUrl)})!important;background-position:center!important;background-size:cover!important;background-attachment:fixed!important}body [data-dsh-frame]{background:color-mix(in srgb,var(--dsw-alias-bg-base) 88%,transparent)!important;backdrop-filter:blur(10px)}`; document.head.appendChild(imageStyle); }
         } catch (error) { console.error('managed theme sync failed', error); }
       };
       sync(); const listener = () => { if (!cancelled) sync(); }; window.addEventListener('dsh-desktop-plugin-catalog-change', listener);
-      return () => { cancelled = true; window.removeEventListener('dsh-desktop-plugin-catalog-change', listener); disposeTokens?.(); style?.remove(); };
+      return () => { cancelled = true; window.removeEventListener('dsh-desktop-plugin-catalog-change', listener); disposeTokens?.(); style?.remove(); imageStyle?.remove(); };
     }
 
     function apply(ctx) {
