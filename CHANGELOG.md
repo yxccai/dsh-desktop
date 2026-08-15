@@ -2,6 +2,8 @@
 
 ## Unreleased - Project Panel Preview
 
+- Allow clipboard writes from the identity-verified loopback DSH page so built-in copy icons and Copy buttons work in the desktop shell, while continuing to deny clipboard reads and untrusted origins.
+- Anchor the project-panel resize handle to the right-side Grid track instead of a cached frame-width pixel offset, preventing divider hit-target drift after layout changes.
 - Add an optional Codex-inspired project panel beside project conversations without replacing DSH tool details.
 - Show only files actually modified or produced by each conversation turn; remove the full project file tree from the panel.
 - Open conversation files in top filename tabs with close buttons and multi-tab previews for Markdown, HTML, source code, diff, CSV, PDF, images, and text.

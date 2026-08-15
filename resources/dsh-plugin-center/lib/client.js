@@ -213,17 +213,18 @@ window.__ModuleLoader__.load({
     function mountProjectColumn() {
       let frame = null; let column = null; let handle = null; let observer = null; let shellTracks = [];
       let panelWidth = 0; let dragStartX = 0; let dragStartWidth = 0;
-      const applyGrid = () => { if (frame && shellTracks.length === 3) frame.style.gridTemplateColumns = `${shellTracks[0]} minmax(0, 1fr) ${shellTracks[2]} ${Math.round(panelWidth)}px`; if (column) column.style.visibility = panelWidth > 0 ? 'visible' : 'hidden'; if (handle && frame) { handle.style.display = panelWidth > 0 ? 'block' : 'none'; handle.style.left = `${Math.round(frame.getBoundingClientRect().width - panelWidth)}px`; } };
+      const applyGrid = () => { if (frame && shellTracks.length === 3) frame.style.gridTemplateColumns = `${shellTracks[0]} minmax(0, 1fr) ${shellTracks[2]} ${Math.round(panelWidth)}px`; if (column) column.style.visibility = panelWidth > 0 ? 'visible' : 'hidden'; if (handle) { handle.style.display = panelWidth > 0 ? 'block' : 'none'; handle.style.right = `${Math.round(panelWidth)}px`; } };
       const attach = () => {
         if (frame) return;
         const found = document.querySelector('[data-dsh-frame]') || document.querySelector('[class*="sidebarCol"]')?.parentElement;
         if (!found) return;
         frame = found;
         frame.dataset.dshDesktopFrame = 'true';
+        if (getComputedStyle(frame).position === 'static') frame.style.position = 'relative';
         const tracks = parseGridTracks(frame.style.gridTemplateColumns);
         if (tracks.length === 3) shellTracks = tracks;
         column = document.createElement('div'); column.dataset.dppPreviewColumn = ''; column.style.cssText = 'min-width:0;overflow:visible;display:flex;flex-direction:column;border-left:1px solid var(--dsw-alias-border-l2);position:relative;z-index:21'; frame.appendChild(column); projectPanelColumn = column; window.dispatchEvent(new Event('dsh-desktop-project-column'));
-        handle = document.createElement('div'); handle.className = 'dpp-frame-resizer'; handle.style.cssText = 'position:absolute;top:0;bottom:0;width:20px;margin-left:-10px;z-index:40;cursor:col-resize;display:none';
+        handle = document.createElement('div'); handle.className = 'dpp-frame-resizer'; handle.style.cssText = 'position:absolute;top:0;bottom:0;width:20px;margin-right:-10px;z-index:40;cursor:col-resize;display:none';
         const move = (event) => { event.preventDefault(); const next = Math.max(320, Math.min(1000, dragStartWidth + dragStartX - event.clientX)); panelWidth = next; applyGrid(); window.dispatchEvent(new CustomEvent('dsh-desktop-project-width', { detail: { width: next } })); };
         const up = () => { document.body.style.cursor = ''; document.body.style.userSelect = ''; window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); };
         handle.addEventListener('pointerdown', (event) => { event.preventDefault(); dragStartX = event.clientX; dragStartWidth = panelWidth; document.body.style.cursor = 'col-resize'; document.body.style.userSelect = 'none'; window.addEventListener('pointermove', move); window.addEventListener('pointerup', up); });

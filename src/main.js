@@ -9,6 +9,7 @@ const { detectEnvironment } = require('./environment-detector');
 const { PluginManager } = require('./plugin-manager');
 const { ensureDshIntegration, installBridgePackage } = require('./dsh-integration');
 const { ProjectPanelManager } = require('./project-panel-manager');
+const { allowsDesktopPermission } = require('./desktop-permissions');
 
 // Keep desktop-only state separate from DSH_HOME. Users who avoid the system
 // drive can set DSH_DESKTOP_HOME before launching the app.
@@ -70,8 +71,9 @@ function createWindow() {
     },
   });
 
-  mainWindow.webContents.session.setPermissionCheckHandler(() => false);
-  mainWindow.webContents.session.setPermissionRequestHandler((_webContents, _permission, callback) => callback(false));
+  const permissionAllowed = (contents, permission, details = {}) => allowsDesktopPermission({ permission, senderUrl: details.requestingUrl || contents?.getURL?.() || '', appOrigin: configuredOrigin(), isMainWindow: contents === mainWindow?.webContents });
+  mainWindow.webContents.session.setPermissionCheckHandler((contents, permission, requestingOrigin, details) => permissionAllowed(contents, permission, { ...details, requestingUrl: details?.requestingUrl || requestingOrigin }));
+  mainWindow.webContents.session.setPermissionRequestHandler((contents, permission, callback, details) => callback(permissionAllowed(contents, permission, details)));
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     if (/^https?:/i.test(url)) shell.openExternal(url);
     return { action: 'deny' };
