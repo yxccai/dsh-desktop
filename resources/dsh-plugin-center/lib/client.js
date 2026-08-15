@@ -254,7 +254,7 @@ window.__ModuleLoader__.load({
     function applyManagedTheme(ctx) {
       const theme = ctx.get('theme');
       if (!theme || !api?.pluginCenter) return () => {};
-      let disposeTokens = null; let style = null; let imageStyle = null; let cancelled = false;
+      let disposeTokens = null; let disposeImageTokens = null; let style = null; let imageLayer = null; let cancelled = false;
       const sync = async () => {
         try {
           const snapshot = await api.pluginCenter.list();
@@ -268,12 +268,19 @@ window.__ModuleLoader__.load({
           } else if (!enabled && disposeTokens) { disposeTokens(); disposeTokens = null; style?.remove(); style = null; }
           const custom = snapshot.recommended?.find((entry) => entry.id === CUSTOM_BACKGROUND_ID)?.status === 'enabled';
           const background = custom ? await api.pluginCenter.backgroundGet() : null;
-          imageStyle?.remove(); imageStyle = null;
-          if (background?.dataUrl) { imageStyle = document.createElement('style'); imageStyle.dataset.dshDesktopTheme = CUSTOM_BACKGROUND_ID; imageStyle.textContent = `html,body,#root{background:transparent!important}body{background:#07131d!important}[data-dsh-desktop-frame="true"]{background-image:linear-gradient(rgba(4,12,20,.46),rgba(4,12,20,.58)),url(${JSON.stringify(background.dataUrl)})!important;background-position:center!important;background-size:cover!important;background-repeat:no-repeat!important;background-attachment:fixed!important}[data-dsh-desktop-frame="true"]>*{background-color:color-mix(in srgb,var(--dsw-alias-bg-base) 76%,transparent)!important;backdrop-filter:blur(8px)}[data-dsh-desktop-frame="true"] [data-dpp-preview-column]{background-color:color-mix(in srgb,var(--dsw-alias-bg-base) 82%,transparent)!important}`; document.head.appendChild(imageStyle); }
+          imageLayer?.remove(); imageLayer = null; disposeImageTokens?.(); disposeImageTokens = null;
+          if (background?.dataUrl) disposeImageTokens = theme.overrideTokens('dsh-desktop-custom-background', {
+            '--dsw-alias-bg-base': { light: 'rgba(245,250,252,.86)', dark: 'rgba(6,19,31,.84)' },
+            '--dsw-alias-bg-layer-1': { light: 'rgba(255,255,255,.76)', dark: 'rgba(11,32,48,.76)' },
+            '--dsw-alias-bg-layer-2': { light: 'rgba(239,247,250,.72)', dark: 'rgba(16,43,61,.72)' },
+            '--dsw-specific-sidebar-fill': { light: 'rgba(235,245,248,.88)', dark: 'rgba(8,27,41,.88)' }
+          });
+          const frame = document.querySelector('[data-dsh-desktop-frame="true"]');
+          if (background?.dataUrl && frame) { imageLayer = document.createElement('div'); imageLayer.dataset.dshDesktopTheme = CUSTOM_BACKGROUND_ID; imageLayer.setAttribute('aria-hidden', 'true'); imageLayer.style.cssText = `position:absolute;inset:0;z-index:-1;pointer-events:none;background-image:linear-gradient(rgba(4,12,20,.3),rgba(4,12,20,.42)),url(${JSON.stringify(background.dataUrl)});background-position:center;background-size:cover;background-repeat:no-repeat`; if (getComputedStyle(frame).position === 'static') frame.style.position = 'relative'; frame.style.isolation = 'isolate'; frame.prepend(imageLayer); }
         } catch (error) { console.error('managed theme sync failed', error); }
       };
       sync(); const listener = () => { if (!cancelled) sync(); }; window.addEventListener('dsh-desktop-plugin-catalog-change', listener);
-      return () => { cancelled = true; window.removeEventListener('dsh-desktop-plugin-catalog-change', listener); disposeTokens?.(); style?.remove(); imageStyle?.remove(); };
+      return () => { cancelled = true; window.removeEventListener('dsh-desktop-plugin-catalog-change', listener); disposeTokens?.(); disposeImageTokens?.(); style?.remove(); imageLayer?.remove(); };
     }
 
     function apply(ctx) {
