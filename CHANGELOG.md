@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.0 - Plugin Center Preview
+
+- Add a sandboxed desktop Plugin Center available from the system tray.
+- Install, enable, disable, and uninstall allowlisted Agent Preset packages.
+- Keep user and external Presets read-only and never modify shipped DSH Presets.
+- Verify bundled plugin digests and use transactional filesystem operations.
+- Refuse destructive uninstall after a user modifies installed plugin content.
+- Add the lightweight Desktop Writing preset as the first bundled recommendation.
+
 ## 0.2.0 - Hybrid Runtime Preview
 
 - Bundle the complete production dependency graph of `@deepseek-ai/dsh` 0.1.0-rc.6.
