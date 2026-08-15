@@ -8,6 +8,7 @@
 - Shrink the chat layout while the panel is open instead of covering the conversation.
 - Add source/preview switching, split editing, atomic saves, external-change protection, and system opening for Office/binary files.
 - Add real Git status, file diffs, safe single-file discard, and assistant-turn project snapshots that do not modify the user's Git index.
+- Add non-Git workspace support with content-blob snapshots stored outside the project, full-context diffs, per-file undo, and snapshot restore without running `git init`.
 - Add recoverable snapshot restore with an automatic pre-restore checkpoint.
 - Persist width, collapsed state, and active panel section per project; support drag resize and double-click reset.
 - Confine filesystem IPC to canonical roots registered in the DSH Workspace registry, reject escaping symlinks, cap preview sizes, and avoid shell command execution.
