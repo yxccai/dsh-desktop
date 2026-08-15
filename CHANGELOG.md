@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased - Project Panel Preview
+
+- Add an optional Codex-inspired project panel beside project conversations without replacing DSH tool details.
+- Add a searchable lazy file tree and multi-tab previews for Markdown, HTML, source code, diff, CSV, PDF, images, and text.
+- Add source/preview switching, split editing, atomic saves, external-change protection, and system opening for Office/binary files.
+- Add real Git status, file diffs, safe single-file discard, and assistant-turn project snapshots that do not modify the user's Git index.
+- Add recoverable snapshot restore with an automatic pre-restore checkpoint.
+- Persist width, collapsed state, and active panel section per project; support drag resize and double-click reset.
+- Confine filesystem IPC to canonical workspace paths, reject escaping symlinks, cap preview sizes, and avoid shell command execution.
+
 ## 0.3.0 - Plugin Center Preview
 
 - Add the Plugin Center inside DSH Settings → Plugins, with the system tray window retained as a fallback shortcut.

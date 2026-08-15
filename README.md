@@ -12,6 +12,7 @@ An unofficial open-source desktop app for [DeepSeek Harness](https://github.com/
 - **Full Web experience**: Uses the original DSH Web UI for maximum feature and plugin compatibility.
 - **Secure isolation**: The Web page receives no direct Node.js, filesystem, or arbitrary command access.
 - **Plugin Center**: Install, enable, disable, and manage recommended Agent Presets without overwriting existing user content.
+- **Project panel**: Browse and search files, open multi-tab previews, edit and save text, inspect real Git changes, and recover project snapshots beside the conversation.
 - **Built to grow**: Setup guidance, updates, more desktop features, and broader platform support are planned.
 
 ## Download
@@ -32,6 +33,12 @@ DSH Desktop automatically selects an available runtime:
 4. Fall back to the bundled DSH runtime.
 
 Existing users can usually keep their original `DSH_HOME`, sessions, Agent Presets, and persistent plugins. New users do not need to install DSH or Node.js first.
+
+## Project panel
+
+Project sessions include an optional right-side panel with a searchable file tree, multi-tab previews for Markdown, HTML, source code, diff, CSV, PDF, images, and text, split editing with conflict-aware atomic saves, and real Git status/diff/discard controls. Panel width, collapsed state, and active section are stored per project. Completed assistant turns produce recoverable Git tree snapshots without modifying the repository index; restoring a snapshot first records the current state as a recovery point.
+
+Office files currently open through their system application; native DOCX/XLSX/PPTX rendering remains planned.
 
 ## Plugin compatibility
 

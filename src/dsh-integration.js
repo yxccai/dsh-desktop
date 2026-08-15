@@ -2,12 +2,22 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const crypto = require('node:crypto');
 const START = '# >>> DSH Desktop Plugin Center >>>';
 const END = '# <<< DSH Desktop Plugin Center <<<';
 
 function renderBlock(packageName) {
   if (packageName !== '@yxccai/dsh-desktop-plugin-center') throw new Error('不允许的 DSH 集成包');
   return `${START}\n- insert:\n    - id: desktop-plugin-center\n      name: '${packageName}'\n${END}`;
+}
+
+function bridgeDigest(directory) {
+  const hash = crypto.createHash('sha256');
+  for (const name of ['package.json', path.join('lib', 'index.js'), path.join('lib', 'client.js')]) {
+    hash.update(name.replaceAll('\\', '/'));
+    hash.update(fs.readFileSync(path.join(directory, name)));
+  }
+  return hash.digest('hex');
 }
 
 function installBridgePackage(dshHome, sourceDir) {
@@ -19,7 +29,7 @@ function installBridgePackage(dshHome, sourceDir) {
   const currentManifest = fs.existsSync(path.join(target, 'package.json'))
     ? JSON.parse(fs.readFileSync(path.join(target, 'package.json'), 'utf8'))
     : null;
-  if (currentManifest?.name === sourceManifest.name && currentManifest.version === sourceManifest.version) return { changed: false, target };
+  if (currentManifest?.name === sourceManifest.name && currentManifest.version === sourceManifest.version && bridgeDigest(target) === bridgeDigest(source)) return { changed: false, target };
   if (fs.existsSync(target) && currentManifest?.name !== sourceManifest.name) throw new Error('DSH_HOME 中存在冲突的插件中心包');
   fs.mkdirSync(path.dirname(target), { recursive: true });
   const temp = `${target}.installing-${process.pid}-${Date.now()}`;

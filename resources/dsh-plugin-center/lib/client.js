@@ -3,56 +3,151 @@ window.__ModuleLoader__.load({
   factory: (require) => {
     const module = { exports: {} };
     const React = require("react");
+    const api = window.dshDesktop;
+    const h = React.createElement;
 
     function PluginCenterTab() {
       const [state, setState] = React.useState({ loading: true, data: null, error: "" });
-      const refresh = async () => {
-        try {
-          const data = await window.dshDesktop.pluginCenter.list();
-          setState({ loading: false, data, error: "" });
-        } catch (error) {
-          setState({ loading: false, data: null, error: error?.message || String(error) });
-        }
-      };
+      const refresh = async () => { try { setState({ loading: false, data: await api.pluginCenter.list(), error: "" }); } catch (error) { setState({ loading: false, data: null, error: error?.message || String(error) }); } };
       React.useEffect(() => { refresh(); }, []);
-      const act = async (action, id) => {
-        try {
-          const data = await window.dshDesktop.pluginCenter[action](id);
-          setState({ loading: false, data, error: "" });
-        } catch (error) {
-          setState((old) => ({ ...old, error: error?.message || String(error) }));
-        }
-      };
-      const button = (label, action, id, danger) => React.createElement("button", { className: danger ? "dpc-danger" : "", onClick: () => act(action, id) }, label);
+      const act = async (action, id) => { try { setState({ loading: false, data: await api.pluginCenter[action](id), error: "" }); } catch (error) { setState((old) => ({ ...old, error: error?.message || String(error) })); } };
+      const button = (label, action, id, danger) => h("button", { className: danger ? "dpc-danger" : "", onClick: () => act(action, id) }, label);
       const cards = (state.data?.recommended || []).map((plugin) => {
         const actions = [];
         if (plugin.status === "available") actions.push(button("安装", "install", plugin.id));
         if (plugin.status === "enabled" && plugin.owned) actions.push(button("停用", "disable", plugin.id), button("卸载", "uninstall", plugin.id, true));
         if (plugin.status === "disabled" && plugin.owned) actions.push(button("启用", "enable", plugin.id), button("卸载", "uninstall", plugin.id, true));
         const status = ({ available: "可安装", enabled: "已启用", disabled: "已停用", conflict: "名称冲突" })[plugin.status] || plugin.status;
-        return React.createElement("article", { className: "dpc-card", key: plugin.id },
-          React.createElement("div", { className: "dpc-head" }, React.createElement("strong", null, plugin.name), React.createElement("span", null, status)),
-          React.createElement("p", null, plugin.description),
-          React.createElement("div", { className: "dpc-meta" }, `${plugin.author} · ${plugin.version}`),
-          React.createElement("div", { className: "dpc-actions" }, ...actions));
+        return h("article", { className: "dpc-card", key: plugin.id }, h("div", { className: "dpc-head" }, h("strong", null, plugin.name), h("span", null, status)), h("p", null, plugin.description), h("div", { className: "dpc-meta" }, `${plugin.author} · ${plugin.version}`), h("div", { className: "dpc-actions" }, ...actions));
       });
-      return React.createElement("section", { className: "dpc-root" },
-        React.createElement("div", { className: "dpc-title" }, React.createElement("div", null, React.createElement("h2", null, "插件中心"), React.createElement("p", null, "安装和管理 DSH Desktop 推荐的 Agent Preset。")), React.createElement("button", { onClick: refresh }, "刷新")),
-        React.createElement("div", { className: "dpc-note" }, "变更会在新会话中生效，当前会话不会被中断。"),
-        state.error ? React.createElement("div", { className: "dpc-error" }, state.error) : null,
-        state.loading ? React.createElement("p", null, "正在加载…") : React.createElement("div", { className: "dpc-grid" }, ...cards));
+      return h("section", { className: "dpc-root" }, h("div", { className: "dpc-title" }, h("div", null, h("h2", null, "插件中心"), h("p", null, "安装和管理 DSH Desktop 推荐的 Agent Preset。")), h("button", { onClick: refresh }, "刷新")), h("div", { className: "dpc-note" }, "变更会在新会话中生效，当前会话不会被中断。"), state.error ? h("div", { className: "dpc-error" }, state.error) : null, state.loading ? h("p", null, "正在加载…") : h("div", { className: "dpc-grid" }, ...cards));
     }
+
+    function workspaceOf(useSessions, useWorkspaces, sessionId) {
+      const summary = useSessions((state) => sessionId ? state.byId[sessionId] : undefined);
+      const items = useWorkspaces((state) => state.items);
+      return items.find((item) => item.sessionIds.includes(sessionId)) || (summary?.cwd ? { path: summary.cwd, title: summary.cwd.split(/[\\/]/).filter(Boolean).pop() } : null);
+    }
+
+    function ProjectPanelToggle({ useSessions, useWorkspaces, useSession, sessionId }) {
+      const workspace = workspaceOf(useSessions, useWorkspaces, sessionId);
+      const completedTurn = useSession((state) => { let latest = 0; state.turnEnds.forEach((value, key) => { if (key > latest) latest = key; }); return latest; });
+      const observedTurns = React.useRef(new Map());
+      React.useEffect(() => {
+        if (!workspace) return;
+        const observed = observedTurns.current.get(sessionId) ?? completedTurn;
+        observedTurns.current.set(sessionId, completedTurn);
+        if (completedTurn <= observed) return;
+        api.projectPanel.snapshot(workspace.path, `回复 ${completedTurn}`, completedTurn).catch((error) => console.error('project snapshot failed', error));
+      }, [sessionId, workspace?.path, completedTurn]);
+      if (!workspace) return null;
+      return h("button", { className: "dpp-toggle", title: "项目面板", onClick: () => window.dispatchEvent(new CustomEvent("dsh-desktop-project-panel-toggle", { detail: { root: workspace.path } })) }, "▱ 项目");
+    }
+
+    function TreeNode({ root, item, level, onOpen }) {
+      const [open, setOpen] = React.useState(false);
+      const [children, setChildren] = React.useState([]);
+      const click = async () => {
+        if (item.kind !== "directory") return onOpen(item.path);
+        if (!open) setChildren((await api.projectPanel.list(root, item.path)).items);
+        setOpen(!open);
+      };
+      return h(React.Fragment, null,
+        h("button", { className: "dpp-tree-row", style: { paddingLeft: `${10 + level * 14}px` }, onClick: click }, h("span", null, item.kind === "directory" ? (open ? "▾" : "▸") : "·"), h("span", { className: item.kind === "directory" ? "dpp-folder" : "" }, item.name)),
+        open ? children.map((child) => h(TreeNode, { key: child.path, root, item: child, level: level + 1, onOpen })) : null);
+    }
+
+    function TextPreview({ file, draft, setDraft, mode }) {
+      if (mode === "source") return h("pre", { className: "dpp-code" }, file.content);
+      if (file.kind === "html") return h("iframe", { className: "dpp-frame", sandbox: "", srcDoc: file.content });
+      if (file.kind === "csv") {
+        const rows = file.content.split(/\r?\n/).slice(0, 500).map((line) => line.split(file.path.endsWith('.tsv') ? '\t' : ','));
+        return h("div", { className: "dpp-table-wrap" }, h("table", null, h("tbody", null, ...rows.map((row, i) => h("tr", { key: i }, ...row.map((cell, j) => h(i === 0 ? "th" : "td", { key: j }, cell)))))));
+      }
+      if (file.kind === "markdown") return h("div", { className: "dpp-markdown" }, ...file.content.split(/\r?\n/).map((line, i) => line.startsWith("# ") ? h("h1", { key: i }, line.slice(2)) : line.startsWith("## ") ? h("h2", { key: i }, line.slice(3)) : line.startsWith("### ") ? h("h3", { key: i }, line.slice(4)) : h("p", { key: i }, line || " ")));
+      return h("pre", { className: `dpp-code ${file.kind === 'diff' ? 'dpp-diff' : ''}` }, file.content);
+    }
+
+    function Preview({ root, file, onSaved, onDraft }) {
+      const [mode, setMode] = React.useState("preview");
+      const [split, setSplit] = React.useState(false);
+      React.useEffect(() => { setMode("preview"); }, [file?.path, file?.modifiedAt]);
+      if (!file) return h("div", { className: "dpp-empty" }, "从文件树或变更列表打开文件");
+      const draft = file.draft ?? file.content ?? "";
+      const setDraft = (value) => onDraft(file.path, value);
+      const save = async () => { const result = await api.projectPanel.save(root, file.path, draft, file.modifiedAt); onSaved({ ...file, content: draft, draft: draft, ...result }); };
+      const rich = file.kind === "image" ? h("img", { className: "dpp-image", src: `data:${file.mime};base64,${file.data}` }) : file.kind === "pdf" ? h("iframe", { className: "dpp-frame", src: `data:${file.mime};base64,${file.data}` }) : file.kind === "office" || file.kind === "binary" ? h("div", { className: "dpp-empty" }, h("p", null, `${file.name} 暂不支持内置渲染`), h("button", { onClick: () => api.projectPanel.openExternal(root, file.path) }, "用系统应用打开")) : h(TextPreview, { file: { ...file, content: draft }, draft, setDraft, mode });
+      return h("div", { className: "dpp-preview" },
+        h("div", { className: "dpp-preview-bar" }, h("strong", null, file.name), h("span", { className: "dpp-spacer" }), file.editable ? h(React.Fragment, null, h("button", { onClick: () => setMode(mode === "source" ? "preview" : "source") }, mode === "source" ? "预览" : "源码"), h("button", { onClick: () => setSplit(!split) }, split ? "单栏" : "分屏"), h("button", { onClick: save, disabled: draft === file.content }, "保存")) : null),
+        h("div", { className: `dpp-preview-body ${split ? 'split' : ''}` }, file.editable && (mode === "source" || split) ? h("textarea", { value: draft, onChange: (event) => setDraft(event.target.value), spellCheck: false }) : null, split ? h(TextPreview, { file: { ...file, content: draft }, draft, setDraft, mode: "preview" }) : mode === "source" ? null : rich));
+    }
+
+    function Changes({ root, onOpen }) {
+      const [status, setStatus] = React.useState({ changes: [], branch: "" });
+      const [history, setHistory] = React.useState([]);
+      const [error, setError] = React.useState("");
+      const refresh = async () => { try { setStatus(await api.projectPanel.gitStatus(root)); setHistory(await api.projectPanel.history(root)); setError(""); } catch (e) { setError(e.message); } };
+      React.useEffect(() => { refresh(); }, [root]);
+      const diff = async (item) => { const data = await api.projectPanel.gitDiff(root, item.path, false); onOpen({ path: item.path, name: item.path.split('/').pop(), kind: 'diff', content: data.content, editable: false }); };
+      const discard = async (item) => { if (confirm(`撤销 ${item.path} 的工作区修改？`)) { await api.projectPanel.discard(root, item.path); refresh(); } };
+      const snapshot = async () => { await api.projectPanel.snapshot(root, `手动快照 ${new Date().toLocaleString()}`, null); refresh(); };
+      const revert = async (item) => { if (confirm(`恢复到“${item.label}”？当前状态会先自动备份。`)) { await api.projectPanel.revertSnapshot(root, item.id); refresh(); } };
+      return h("div", { className: "dpp-changes" }, error ? h("div", { className: "dpp-error" }, error) : null, h("div", { className: "dpp-section-title" }, h("strong", null, `变更 ${status.branch ? `· ${status.branch}` : ''}`), h("button", { onClick: refresh }, "刷新"), h("button", { onClick: snapshot }, "记录快照")), ...status.changes.map((item) => h("div", { className: "dpp-change", key: item.path }, h("button", { onClick: () => diff(item) }, h("span", { className: "dpp-status" }, `${item.index}${item.worktree}`), item.path), h("button", { className: "dpp-danger", onClick: () => discard(item) }, "撤销"))), h("div", { className: "dpp-section-title" }, h("strong", null, "修改快照")), ...history.map((item) => h("div", { className: "dpp-history", key: item.id }, h("div", null, h("strong", null, item.turn ? `回复 ${item.turn}` : item.label), h("small", null, new Date(item.createdAt).toLocaleString())), h("button", { onClick: () => revert(item) }, "恢复"))));
+    }
+
+    function ProjectPanel({ useSessions, useWorkspaces }) {
+      const current = useSessions((state) => state.current);
+      const workspace = workspaceOf(useSessions, useWorkspaces, current);
+      const root = workspace?.path;
+      const [open, setOpen] = React.useState(true);
+      const [width, setWidth] = React.useState(520);
+      const [tab, setTab] = React.useState("files");
+      const [tree, setTree] = React.useState([]);
+      const [query, setQuery] = React.useState("");
+      const [search, setSearch] = React.useState([]);
+      const [files, setFiles] = React.useState([]);
+      const [active, setActive] = React.useState(null);
+      React.useEffect(() => {
+        let current = true;
+        setOpen(false); setTree([]); setQuery(""); setSearch([]); setFiles([]); setActive(null);
+        if (!root) return () => { current = false; };
+        Promise.all([api.projectPanel.getState(root), api.projectPanel.list(root, '')]).then(([s, listing]) => {
+          if (!current) return;
+          setWidth(s.width); setOpen(!s.collapsed); setTab(s.activeTab); setTree(listing.items);
+        }).catch((error) => console.error('project panel load failed', error));
+        return () => { current = false; };
+      }, [root]);
+      React.useEffect(() => { const listener = (event) => { if (!root || event.detail.root === root) { const next = !open; setOpen(next); if (root) api.projectPanel.setState(root, { width, collapsed: !next, activeTab: tab }); } }; window.addEventListener("dsh-desktop-project-panel-toggle", listener); return () => window.removeEventListener("dsh-desktop-project-panel-toggle", listener); }, [root, open, width, tab]);
+      React.useEffect(() => { if (!root || !query.trim()) return setSearch([]); const token = setTimeout(() => api.projectPanel.search(root, query).then(setSearch), 180); return () => clearTimeout(token); }, [root, query]);
+      if (!root || !open) return null;
+      const openPath = async (value) => { const file = typeof value === 'string' ? await api.projectPanel.read(root, value) : value; const opened = { ...file, draft: file.content }; setFiles((old) => old.some((x) => x.path === opened.path) ? old.map((x) => x.path === opened.path ? { ...opened, draft: x.draft ?? opened.content } : x) : [...old, opened]); setActive((old) => old?.path === opened.path ? { ...opened, draft: old.draft ?? opened.content } : opened); };
+      const updateDraft = (filePath, draft) => { setFiles((old) => old.map((x) => x.path === filePath ? { ...x, draft } : x)); setActive((old) => old?.path === filePath ? { ...old, draft } : old); };
+      const startDrag = (event) => { const startX = event.clientX, startWidth = width; const move = (e) => setWidth(Math.max(320, Math.min(1000, startWidth + startX - e.clientX))); const up = (e) => { const next = Math.max(320, Math.min(1000, startWidth + startX - e.clientX)); setWidth(next); api.projectPanel.setState(root, { width: next, collapsed: false, activeTab: tab }); window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', up); }; window.addEventListener('mousemove', move); window.addEventListener('mouseup', up); };
+      const changeTab = (value) => { setTab(value); api.projectPanel.setState(root, { width, collapsed: false, activeTab: value }); };
+      const source = query.trim() ? search : tree;
+      const treePane = h("section", { className: "dpp-tree" },
+        h("input", { value: query, onChange: (e) => setQuery(e.target.value), placeholder: "搜索文件名" }),
+        h("div", { className: "dpp-tree-list" }, ...source.map((item) => query.trim()
+          ? h("button", { className: "dpp-tree-row", key: item.path, onClick: () => item.kind === 'file' && openPath(item.path) }, item.path)
+          : h(TreeNode, { key: item.path, root, item, level: 0, onOpen: openPath }))));
+      const tabs = h("div", { className: "dpp-tabs" }, ...files.map((file) => h("button", { className: active?.path === file.path ? 'active' : '', key: file.path, onClick: () => setActive(file) }, file.name, h("span", { onClick: (e) => { e.stopPropagation(); if (file.editable && file.draft !== file.content && !confirm(`放弃 ${file.name} 的未保存修改？`)) return; const next = files.filter((x) => x.path !== file.path); setFiles(next); if (active?.path === file.path) setActive(next.at(-1) || null); } }, " ×"))));
+      const filePane = h("div", { className: "dpp-work" }, treePane, h("main", null, tabs, h(Preview, { root, file: active, onSaved: openPath, onDraft: updateDraft })));
+      return h("aside", { className: "dpp-panel", style: { width: `${width}px` } },
+        h("div", { className: "dpp-resizer", onMouseDown: startDrag, onDoubleClick: () => { setWidth(520); api.projectPanel.setState(root, { width: 520, collapsed: false, activeTab: tab }); } }),
+        h("header", null, h("strong", null, workspace.title || root.split(/[\\/]/).pop()), h("button", { onClick: () => { setOpen(false); api.projectPanel.setState(root, { width, collapsed: true, activeTab: tab }); } }, "×")),
+        h("nav", null, h("button", { className: tab === 'files' ? 'active' : '', onClick: () => changeTab('files') }, "文件 / 预览"), h("button", { className: tab === 'changes' ? 'active' : '', onClick: () => changeTab('changes') }, "变更")),
+        tab === 'files' ? filePane : h(Changes, { root, onOpen: openPath }));
+    }
+
+    const css = `.dpc-root{width:100%;max-width:820px;color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;gap:14px}.dpc-title,.dpc-head,.dpp-section-title{display:flex;align-items:center;justify-content:space-between}.dpc-title h2,.dpc-title p,.dpc-card p{margin:0}.dpc-title p,.dpc-meta,.dpc-note{color:var(--dsw-alias-label-secondary);font-size:13px}.dpc-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.dpc-card{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-2);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:12px}.dpc-actions,.dpp-actions{display:flex;gap:8px}.dpc-root button,.dpp-panel button,.dpp-toggle{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);border-radius:7px;padding:6px 10px;cursor:pointer}.dpc-danger,.dpp-danger,.dpp-error{color:var(--dsw-alias-state-error-primary)!important}.dpc-note{padding:10px 12px;border-radius:8px;background:var(--dsw-alias-bg-layer-2)}.dpp-toggle{height:30px}.dpp-panel{pointer-events:auto;position:fixed;right:0;top:0;bottom:0;z-index:100;background:var(--dsw-alias-bg-base);border-left:1px solid var(--dsw-alias-border-l1);box-shadow:-8px 0 24px #0003;color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;min-width:320px;max-width:min(1000px,85vw)}.dpp-resizer{position:absolute;left:-4px;top:0;bottom:0;width:8px;cursor:ew-resize}.dpp-panel>header{height:48px;display:flex;align-items:center;gap:8px;padding:0 12px;border-bottom:1px solid var(--dsw-alias-border-l2)}.dpp-panel>header strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dpp-panel>header button{margin-left:auto}.dpp-panel>nav{display:flex;padding:8px;gap:6px;border-bottom:1px solid var(--dsw-alias-border-l2)}.dpp-panel>nav button.active,.dpp-tabs button.active{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}.dpp-work{display:grid;grid-template-columns:210px minmax(0,1fr);flex:1;min-height:0}.dpp-tree{border-right:1px solid var(--dsw-alias-border-l2);display:flex;flex-direction:column;min-width:0}.dpp-tree input{margin:8px;padding:8px;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-layer-1);color:inherit}.dpp-tree-list{overflow:auto;flex:1}.dpp-tree-row{width:100%;border:0!important;border-radius:0!important;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:transparent!important;padding-top:5px!important;padding-bottom:5px!important}.dpp-tree-row:hover{background:var(--dsw-alias-bg-layer-2)!important}.dpp-folder{font-weight:600}.dpp-work>main{display:flex;flex-direction:column;min-width:0;min-height:0}.dpp-tabs{display:flex;overflow:auto;border-bottom:1px solid var(--dsw-alias-border-l2);padding:5px;gap:4px}.dpp-tabs button{white-space:nowrap}.dpp-preview{display:flex;flex-direction:column;flex:1;min-height:0}.dpp-preview-bar{height:42px;display:flex;align-items:center;gap:6px;padding:0 10px;border-bottom:1px solid var(--dsw-alias-border-l2)}.dpp-spacer{flex:1}.dpp-preview-body{flex:1;min-height:0;overflow:auto}.dpp-preview-body.split{display:grid;grid-template-columns:1fr 1fr}.dpp-preview-body textarea{resize:none;border:0;border-right:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);color:inherit;padding:12px;font:13px/1.55 Consolas,monospace;outline:none}.dpp-code{margin:0;padding:14px;white-space:pre-wrap;word-break:break-word;font:13px/1.55 Consolas,monospace}.dpp-frame{width:100%;height:100%;border:0;background:white}.dpp-image{display:block;max-width:100%;max-height:100%;margin:auto}.dpp-markdown{padding:18px;line-height:1.6}.dpp-markdown p{white-space:pre-wrap}.dpp-table-wrap{overflow:auto;padding:10px}.dpp-table-wrap table{border-collapse:collapse}.dpp-table-wrap th,.dpp-table-wrap td{border:1px solid var(--dsw-alias-border-l2);padding:5px 8px;white-space:nowrap}.dpp-empty{height:100%;display:grid;place-content:center;text-align:center;color:var(--dsw-alias-label-secondary)}.dpp-changes{overflow:auto;padding:10px;flex:1}.dpp-section-title{margin:8px 0;gap:5px}.dpp-section-title button:first-of-type{margin-left:auto}.dpp-change,.dpp-history{display:flex;align-items:center;gap:6px;border-bottom:1px solid var(--dsw-alias-border-l2);padding:7px 0}.dpp-change>button:first-child{flex:1;text-align:left;border:0;background:transparent}.dpp-status{display:inline-block;width:28px;color:var(--dsw-alias-state-warn-primary)}.dpp-history>div{flex:1;display:flex;flex-direction:column}.dpp-history small{color:var(--dsw-alias-label-secondary)}@media(max-width:760px){.dpc-grid{grid-template-columns:1fr}.dpp-work{grid-template-columns:150px minmax(0,1fr)}}`;
 
     function apply(ctx) {
       const slots = ctx.get("slots");
-      if (!slots || !window.dshDesktop?.pluginCenter) return;
-      ctx.effect(() => {
-        const style = document.createElement("style");
-        style.textContent = `.dpc-root{width:100%;max-width:820px;color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;gap:14px}.dpc-title{display:flex;align-items:center;justify-content:space-between}.dpc-title h2,.dpc-title p,.dpc-card p{margin:0}.dpc-title p,.dpc-meta,.dpc-note{color:var(--dsw-alias-label-tertiary);font-size:13px}.dpc-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.dpc-card{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-3);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:12px}.dpc-head{display:flex;justify-content:space-between}.dpc-head span{font-size:12px;color:var(--dsw-alias-label-tertiary)}.dpc-actions{display:flex;gap:8px}.dpc-root button{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);border-radius:7px;padding:6px 11px;cursor:pointer}.dpc-root button:hover{border-color:var(--dsw-alias-state-business-primary)}.dpc-danger{color:var(--dsw-alias-state-error-primary)!important}.dpc-note{padding:10px 12px;border-radius:8px;background:var(--dsw-alias-bg-layer-2)}.dpc-error{color:var(--dsw-alias-state-error-primary)}@media(max-width:760px){.dpc-grid{grid-template-columns:1fr}}`;
-        document.head.appendChild(style);
-        return () => style.remove();
-      });
+      if (!slots || !api?.pluginCenter || !api?.projectPanel) return;
+      ctx.effect(() => { const style = document.createElement("style"); style.textContent = css; document.head.appendChild(style); return () => style.remove(); });
       slots.inject("settings.plugins.tab", () => slots.register({ name: "settings.plugins.tab", id: "desktop-center", order: 20, label: "插件中心" }, PluginCenterTab));
+      slots.inject("conversation.session.header.actions", () => slots.register({ name: "conversation.session.header.actions", id: "desktop-project-panel", order: 30, label: "项目" }, ProjectPanelToggle));
+      slots.inject("shell.overlay", () => slots.register({ name: "shell.overlay", id: "desktop-project-panel", order: 20 }, ProjectPanel));
     }
 
     module.exports.apply = apply;

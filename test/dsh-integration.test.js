@@ -43,9 +43,14 @@ test('installs the bridge package under DSH_HOME node_modules transactionally', 
   const source = path.join(root, 'source');
   fs.mkdirSync(path.join(source, 'lib'), { recursive: true });
   fs.writeFileSync(path.join(source, 'package.json'), JSON.stringify({ name: PACKAGE, version: '1.0.0' }));
+  fs.writeFileSync(path.join(source, 'lib', 'index.js'), 'host');
   fs.writeFileSync(path.join(source, 'lib', 'client.js'), 'client');
   const first = installBridgePackage(path.join(root, 'home'), source);
   assert.equal(first.changed, true);
   assert.equal(fs.readFileSync(path.join(first.target, 'lib', 'client.js'), 'utf8'), 'client');
   assert.equal(installBridgePackage(path.join(root, 'home'), source).changed, false);
+  fs.writeFileSync(path.join(source, 'lib', 'client.js'), 'updated client');
+  const refreshed = installBridgePackage(path.join(root, 'home'), source);
+  assert.equal(refreshed.changed, true);
+  assert.equal(fs.readFileSync(path.join(refreshed.target, 'lib', 'client.js'), 'utf8'), 'updated client');
 });

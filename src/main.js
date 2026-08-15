@@ -8,6 +8,7 @@ const { configDefaults, loadConfig } = require('./config');
 const { detectEnvironment } = require('./environment-detector');
 const { PluginManager } = require('./plugin-manager');
 const { ensureDshIntegration, installBridgePackage } = require('./dsh-integration');
+const { ProjectPanelManager } = require('./project-panel-manager');
 
 // Keep desktop-only state separate from DSH_HOME. Users who avoid the system
 // drive can set DSH_DESKTOP_HOME before launching the app.
@@ -20,6 +21,7 @@ let pluginCenterWindow = null;
 let tray = null;
 let runtime = null;
 let pluginManager = null;
+let projectPanelManager = null;
 let config = null;
 let quitting = false;
 
@@ -145,6 +147,32 @@ function registerPluginCenterIpc() {
   });
 }
 
+function registerProjectPanelIpc() {
+  const handle = (channel, operation) => ipcMain.handle(channel, async (event, input) => {
+    if (!mainWindow || mainWindow.isDestroyed() || event.sender !== mainWindow.webContents || !isAllowedNavigation(event.sender.getURL())) throw new Error('不允许的项目面板请求');
+    if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('项目面板参数无效');
+    return operation(input);
+  });
+  handle('project-panel:list', (x) => projectPanelManager.list(x.root, x.path));
+  handle('project-panel:search', (x) => projectPanelManager.search(x.root, x.query));
+  handle('project-panel:read', (x) => projectPanelManager.read(x.root, x.path));
+  handle('project-panel:save', (x) => projectPanelManager.save(x.root, x.path, x.content, x.modifiedAt));
+  handle('project-panel:state-get', (x) => projectPanelManager.getState(x.root));
+  handle('project-panel:state-set', (x) => projectPanelManager.setState(x.root, x.state));
+  handle('project-panel:git-status', (x) => projectPanelManager.gitStatus(x.root));
+  handle('project-panel:git-diff', (x) => projectPanelManager.gitDiff(x.root, x.path, x.staged === true));
+  handle('project-panel:discard', (x) => projectPanelManager.discard(x.root, x.path));
+  handle('project-panel:history', (x) => projectPanelManager.history(x.root));
+  handle('project-panel:snapshot', (x) => projectPanelManager.snapshot(x.root, x.label, x.turn));
+  handle('project-panel:revert-snapshot', (x) => projectPanelManager.revertSnapshot(x.root, x.id));
+  handle('project-panel:open-external', async (x) => {
+    const { target } = projectPanelManager.resolvePath(x.root, x.path);
+    const result = await shell.openPath(target);
+    if (result) throw new Error(result);
+    return true;
+  });
+}
+
 function createTray() {
   const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><rect rx="7" width="32" height="32" fill="#182230"/><text x="16" y="22" font-family="Arial" font-size="16" text-anchor="middle" fill="white">DS</text></svg>';
   const image = nativeImage.createFromDataURL(`data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`).resize({ width: 16, height: 16 });
@@ -184,6 +212,7 @@ async function start() {
   config = loadConfig(userFile('config.json'), defaults);
   if (!fs.existsSync(config.dshHome)) fs.mkdirSync(config.dshHome, { recursive: true });
   const resourceRoot = app.isPackaged ? process.resourcesPath : path.join(app.getAppPath(), 'resources');
+  projectPanelManager = new ProjectPanelManager({ stateRoot: path.join(app.getPath('userData'), 'project-panel') });
   pluginManager = new PluginManager({
     dshHome: config.dshHome,
     catalogPath: path.join(resourceRoot, 'plugin-catalog.json'),
@@ -194,6 +223,7 @@ async function start() {
   const integration = ensureDshIntegration(config.dshHome);
   if (integration.changed || bridge.changed) log(`Enabled DSH settings Plugin Center in ${integration.patchPath}; DSH restart required`);
   registerPluginCenterIpc();
+  registerProjectPanelIpc();
   const environment = await detectEnvironment({
     appPath: app.getAppPath(),
     resourcesPath: process.resourcesPath,
