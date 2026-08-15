@@ -64,6 +64,24 @@ test('persists panel state per project with clamped width', (t) => {
   assert.deepEqual(manager.getState(workspace), { width: 1000, collapsed: true, activeTab: 'changes' });
 });
 
+test('snapshots, diffs, and restores a workspace without Git', async (t) => {
+  const { workspace, manager } = fixture(t);
+  const base = await manager.snapshot(workspace, '初始', 0);
+  assert.equal(base[0].kind, 'files');
+  fs.writeFileSync(path.join(workspace, 'src', 'app.js'), 'console.log("two")\n');
+  fs.writeFileSync(path.join(workspace, 'new.txt'), 'new\n');
+  const history = await manager.snapshot(workspace, '回复 1', 1);
+  const diff = await manager.snapshotDiff(workspace, history[0].id, 'src/app.js');
+  assert.match(diff.content, /console\.log\("two"\)/);
+  await manager.revertSnapshotFile(workspace, history[0].id, 'src/app.js');
+  assert.equal(fs.readFileSync(path.join(workspace, 'src', 'app.js'), 'utf8'), 'console.log("one")\n');
+  fs.writeFileSync(path.join(workspace, 'src', 'app.js'), 'console.log("two")\n');
+  await manager.revertSnapshot(workspace, base[0].id);
+  assert.equal(fs.readFileSync(path.join(workspace, 'src', 'app.js'), 'utf8'), 'console.log("one")\n');
+  assert.equal(fs.existsSync(path.join(workspace, 'new.txt')), false);
+  assert.equal((await manager.gitStatus(workspace)).available, false);
+});
+
 test('rejects Git operations when workspace is nested below repository root', async (t) => {
   const { root, workspace, manager } = fixture(t, true);
   const nested = path.join(workspace, 'src');

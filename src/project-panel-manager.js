@@ -77,6 +77,41 @@ class ProjectPanelManager {
 
   stateFile(root) { return path.join(this.stateRoot, 'projects', `${this.projectKey(root)}.json`); }
   historyFile(root) { return path.join(this.stateRoot, 'history', `${this.projectKey(root)}.json`); }
+  blobFile(hash) { return path.join(this.stateRoot, 'blobs', hash.slice(0, 2), hash); }
+  hasExactRepo(rootValue) {
+    const root = this.resolveRoot(rootValue);
+    let cursor = root;
+    while (true) {
+      if (fs.existsSync(path.join(cursor, '.git'))) {
+        if (cursor.toLowerCase() !== root.toLowerCase()) throw new Error('Git 仓库根必须与 DSH 工作区根一致');
+        return true;
+      }
+      const parent = path.dirname(cursor);
+      if (parent === cursor) return false;
+      cursor = parent;
+    }
+  }
+  captureFiles(root) {
+    const files = {};
+    const walk = (directory, depth = 0) => {
+      if (depth > 30) return;
+      for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+        if (IGNORE_DIRS.has(entry.name) || entry.isSymbolicLink()) continue;
+        const target = path.join(directory, entry.name);
+        if (entry.isDirectory()) { walk(target, depth + 1); continue; }
+        if (!entry.isFile()) continue;
+        const stat = fs.statSync(target);
+        if (stat.size > MAX_BINARY) continue;
+        const data = fs.readFileSync(target);
+        const hash = crypto.createHash('sha256').update(data).digest('hex');
+        const blob = this.blobFile(hash);
+        if (!fs.existsSync(blob)) { fs.mkdirSync(path.dirname(blob), { recursive: true }); fs.writeFileSync(blob, data); }
+        files[path.relative(root, target).replaceAll('\\', '/')] = { hash, size: stat.size, mode: stat.mode };
+      }
+    };
+    walk(root);
+    return files;
+  }
 
   getState(rootValue) {
     const root = this.resolveRoot(rootValue);
@@ -180,7 +215,9 @@ class ProjectPanelManager {
   }
 
   async gitStatus(rootValue) {
-    const root = await this.requireRepoRoot(rootValue);
+    const root = this.resolveRoot(rootValue);
+    if (!this.hasExactRepo(root)) return { root, branch: '', changes: [], available: false };
+    await this.requireRepoRoot(root);
     let branch = '';
     try { branch = (await this.git(root, ['branch','--show-current'])).stdout.trim(); } catch {}
     const { stdout } = await this.git(root, ['status','--porcelain=v1','-z','--untracked-files=all']);
@@ -192,7 +229,7 @@ class ProjectPanelManager {
       if (xy.includes('R') || xy.includes('C')) original = records[++i] || null;
       changes.push({ path: file.replaceAll('\\','/'), originalPath: original?.replaceAll('\\','/') || null, index: xy[0], worktree: xy[1], untracked: xy === '??' });
     }
-    return { root, branch, changes };
+    return { root, branch, changes, available: true };
   }
 
   async gitDiff(rootValue, relative, staged = false) {
@@ -269,17 +306,42 @@ class ProjectPanelManager {
     } finally { fs.rmSync(tempIndex, { force: true }); }
   }
 
+  async createFileSnapshot(root, label, turn) {
+    const files = this.captureFiles(root);
+    const manifestHash = crypto.createHash('sha256').update(JSON.stringify(files)).digest('hex');
+    const history = this.history(root);
+    const id = crypto.randomUUID();
+    history.unshift({ id, kind: 'files', files, manifestHash, baseId: history[0]?.id || null, label: String(label || '修改快照').slice(0,120), turn: Number.isInteger(turn) ? turn : null, createdAt: new Date().toISOString() });
+    const trimmed = history.slice(0, 50);
+    atomicJson(this.historyFile(root), trimmed);
+    return trimmed;
+  }
+
   async snapshot(rootValue, label, turn) {
     const root = this.resolveRoot(rootValue);
-    return this.enqueue(root, () => this.createSnapshot(root, label, turn));
+    return this.enqueue(root, () => this.hasExactRepo(root) ? this.createSnapshot(root, label, turn) : this.createFileSnapshot(root, label, turn));
   }
 
   async snapshotDiff(rootValue, snapshotId, relative) {
-    const root = await this.requireRepoRoot(rootValue);
+    const root = this.resolveRoot(rootValue);
     const history = this.history(root);
     const index = history.findIndex((item) => item.id === snapshotId);
     if (index < 0) throw new Error('找不到修改快照');
     const current = history[index];
+    if (current.kind === 'files') {
+      const previous = history.find((item) => item.id === current.baseId) || history.slice(index + 1).find((item) => item.kind === 'files' && item.manifestHash !== current.manifestHash);
+      const clean = this.resolvePath(root, relative).relative;
+      const before = previous?.files?.[clean]; const after = current.files?.[clean];
+      if (!before && !after) return { path: clean, staged: false, content: '' };
+      const oldText = before ? fs.readFileSync(this.blobFile(before.hash), 'utf8') : '';
+      const newText = after ? fs.readFileSync(this.blobFile(after.hash), 'utf8') : '';
+      const tempRoot = path.join(this.stateRoot, 'diff-temp', crypto.randomUUID()); fs.mkdirSync(tempRoot, { recursive: true });
+      const oldFile = path.join(tempRoot, 'before'); const newFile = path.join(tempRoot, 'after'); fs.writeFileSync(oldFile, oldText); fs.writeFileSync(newFile, newText);
+      try { const { stdout } = await execFileAsync(this.gitPath, ['diff','--no-index','--no-color','--unified=999999','--',oldFile,newFile], { encoding: 'utf8', maxBuffer: 16 * 1024 * 1024, windowsHide: true, timeout: 15000 }); return { path: clean, staged: false, content: stdout }; }
+      catch (error) { if (error.code === 1 && typeof error.stdout === 'string') return { path: clean, staged: false, content: error.stdout }; throw error; }
+      finally { fs.rmSync(tempRoot, { recursive: true, force: true }); }
+    }
+    await this.requireRepoRoot(root);
     const previousTree = current.baseTree || history.slice(index + 1).find((item) => item.tree !== current.tree)?.tree;
     if (!previousTree) return { path: relative || '', staged: false, content: '' };
     if (!/^[0-9a-f]{40,64}$/.test(String(current.tree)) || !/^[0-9a-f]{40,64}$/.test(String(previousTree))) throw new Error('修改快照无效');
@@ -290,14 +352,22 @@ class ProjectPanelManager {
   }
 
   async revertSnapshotFile(rootValue, snapshotId, relative) {
-    const root = await this.requireRepoRoot(rootValue);
+    const root = this.resolveRoot(rootValue);
     const history = this.history(root);
     const index = history.findIndex((item) => item.id === snapshotId);
     if (index < 0) throw new Error('找不到修改前快照');
     const current = history[index];
+    const { target, relative: clean } = this.resolvePath(root, relative);
+    if (current.kind === 'files') {
+      const previous = history.find((item) => item.id === current.baseId) || history.slice(index + 1).find((item) => item.kind === 'files' && item.manifestHash !== current.manifestHash);
+      const entry = previous?.files?.[clean];
+      if (!entry) fs.rmSync(target, { recursive: true, force: true });
+      else { fs.mkdirSync(path.dirname(target), { recursive: true }); fs.writeFileSync(target, fs.readFileSync(this.blobFile(entry.hash))); }
+      return this.gitStatus(root);
+    }
+    await this.requireRepoRoot(root);
     const previousTree = current.baseTree || history.slice(index + 1).find((item) => item.tree !== current.tree)?.tree;
     if (!/^[0-9a-f]{40,64}$/.test(String(previousTree))) throw new Error('修改前快照无效');
-    const { target, relative: clean } = this.resolvePath(root, relative);
     try {
       const { stdout } = await this.git(root, ['show', `${previousTree}:${clean}`], { maxBuffer: 16 * 1024 * 1024, encoding: 'buffer' });
       fs.mkdirSync(path.dirname(target), { recursive: true });
@@ -311,12 +381,20 @@ class ProjectPanelManager {
     return this.gitStatus(root);
   }
 
+  async restoreFileManifest(root, target) {
+    const current = this.captureFiles(root);
+    for (const relative of Object.keys(current)) if (!target.files?.[relative]) fs.rmSync(this.resolvePath(root, relative).target, { force: true });
+    for (const [relative, entry] of Object.entries(target.files || {})) { const resolved = this.resolvePath(root, relative).target; fs.mkdirSync(path.dirname(resolved), { recursive: true }); fs.writeFileSync(resolved, fs.readFileSync(this.blobFile(entry.hash))); }
+    return this.createFileSnapshot(root, `已恢复到：${target.label}`, target.turn);
+  }
+
   async revertSnapshot(rootValue, snapshotId) {
     const root = this.resolveRoot(rootValue);
     return this.enqueue(root, async () => {
-      await this.requireRepoRoot(root);
       const history = this.history(root);
       const target = history.find((item) => item.id === snapshotId);
+      if (target?.kind === 'files') { await this.createFileSnapshot(root, '撤销前自动备份', null); return this.restoreFileManifest(root, target); }
+      await this.requireRepoRoot(root);
       if (!target || !/^[0-9a-f]{40,64}$/.test(String(target.tree))) throw new Error('找不到有效的修改快照');
       await this.git(root, ['cat-file','-e',`${target.tree}^{tree}`]);
       const before = await this.createSnapshot(root, '撤销前自动备份', null);
