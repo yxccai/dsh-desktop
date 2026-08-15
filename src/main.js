@@ -7,7 +7,7 @@ const { RuntimeManager } = require('./runtime-manager');
 const { configDefaults, loadConfig } = require('./config');
 const { detectEnvironment } = require('./environment-detector');
 const { PluginManager } = require('./plugin-manager');
-const { ensureDshIntegration } = require('./dsh-integration');
+const { ensureDshIntegration, installBridgePackage } = require('./dsh-integration');
 
 // Keep desktop-only state separate from DSH_HOME. Users who avoid the system
 // drive can set DSH_DESKTOP_HOME before launching the app.
@@ -189,8 +189,10 @@ async function start() {
     catalogPath: path.join(resourceRoot, 'plugin-catalog.json'),
     bundleRoot: path.join(resourceRoot, 'plugins'),
   });
+  const bridge = installBridgePackage(config.dshHome, path.join(resourceRoot, 'dsh-plugin-center'));
+  if (bridge.changed) log(`Installed DSH settings bridge package at ${bridge.target}`);
   const integration = ensureDshIntegration(config.dshHome);
-  if (integration.changed) log(`Enabled DSH settings Plugin Center in ${integration.patchPath}; DSH restart required`);
+  if (integration.changed || bridge.changed) log(`Enabled DSH settings Plugin Center in ${integration.patchPath}; DSH restart required`);
   registerPluginCenterIpc();
   const environment = await detectEnvironment({
     appPath: app.getAppPath(),

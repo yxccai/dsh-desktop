@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { ensureDshIntegration, START, END } = require('../src/dsh-integration');
+const { ensureDshIntegration, installBridgePackage, START, END } = require('../src/dsh-integration');
 
 const PACKAGE = '@yxccai/dsh-desktop-plugin-center';
 
@@ -35,4 +35,17 @@ test('preserves existing patches and updates its managed block idempotently', (t
 
 test('rejects any untrusted integration package name', () => {
   assert.throws(() => ensureDshIntegration('x', 'other-package'), /不允许/);
+});
+
+test('installs the bridge package under DSH_HOME node_modules transactionally', (t) => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dsh-bridge-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  const source = path.join(root, 'source');
+  fs.mkdirSync(path.join(source, 'lib'), { recursive: true });
+  fs.writeFileSync(path.join(source, 'package.json'), JSON.stringify({ name: PACKAGE, version: '1.0.0' }));
+  fs.writeFileSync(path.join(source, 'lib', 'client.js'), 'client');
+  const first = installBridgePackage(path.join(root, 'home'), source);
+  assert.equal(first.changed, true);
+  assert.equal(fs.readFileSync(path.join(first.target, 'lib', 'client.js'), 'utf8'), 'client');
+  assert.equal(installBridgePackage(path.join(root, 'home'), source).changed, false);
 });

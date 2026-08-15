@@ -10,6 +10,33 @@ function renderBlock(packageName) {
   return `${START}\n- insert:\n    - id: desktop-plugin-center\n      name: '${packageName}'\n${END}`;
 }
 
+function installBridgePackage(dshHome, sourceDir) {
+  const home = path.resolve(dshHome);
+  const source = path.resolve(sourceDir);
+  const target = path.join(home, 'node_modules', '@yxccai', 'dsh-desktop-plugin-center');
+  const sourceManifest = JSON.parse(fs.readFileSync(path.join(source, 'package.json'), 'utf8'));
+  if (sourceManifest.name !== '@yxccai/dsh-desktop-plugin-center') throw new Error('插件中心桥接包身份无效');
+  const currentManifest = fs.existsSync(path.join(target, 'package.json'))
+    ? JSON.parse(fs.readFileSync(path.join(target, 'package.json'), 'utf8'))
+    : null;
+  if (currentManifest?.name === sourceManifest.name && currentManifest.version === sourceManifest.version) return { changed: false, target };
+  if (fs.existsSync(target) && currentManifest?.name !== sourceManifest.name) throw new Error('DSH_HOME 中存在冲突的插件中心包');
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  const temp = `${target}.installing-${process.pid}-${Date.now()}`;
+  const backup = `${target}.backup-${process.pid}-${Date.now()}`;
+  try {
+    fs.cpSync(source, temp, { recursive: true, dereference: true, errorOnExist: true, force: false });
+    if (fs.existsSync(target)) fs.renameSync(target, backup);
+    fs.renameSync(temp, target);
+    fs.rmSync(backup, { recursive: true, force: true });
+  } catch (error) {
+    fs.rmSync(temp, { recursive: true, force: true });
+    if (!fs.existsSync(target) && fs.existsSync(backup)) fs.renameSync(backup, target);
+    throw error;
+  }
+  return { changed: true, target };
+}
+
 function ensureDshIntegration(dshHome, packageName = '@yxccai/dsh-desktop-plugin-center') {
   const home = path.resolve(dshHome);
   const patchPath = path.join(home, 'cordis.patch.yml');
@@ -32,4 +59,4 @@ function ensureDshIntegration(dshHome, packageName = '@yxccai/dsh-desktop-plugin
   return { changed: true, patchPath };
 }
 
-module.exports = { ensureDshIntegration, renderBlock, START, END };
+module.exports = { ensureDshIntegration, installBridgePackage, renderBlock, START, END };
