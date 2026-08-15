@@ -219,6 +219,7 @@ window.__ModuleLoader__.load({
         const found = document.querySelector('[data-dsh-frame]') || document.querySelector('[class*="sidebarCol"]')?.parentElement;
         if (!found) return;
         frame = found;
+        frame.dataset.dshDesktopFrame = 'true';
         const tracks = parseGridTracks(frame.style.gridTemplateColumns);
         if (tracks.length === 3) shellTracks = tracks;
         column = document.createElement('div'); column.dataset.dppPreviewColumn = ''; column.style.cssText = 'min-width:0;overflow:visible;display:flex;flex-direction:column;border-left:1px solid var(--dsw-alias-border-l2);position:relative;z-index:21'; frame.appendChild(column); projectPanelColumn = column; window.dispatchEvent(new Event('dsh-desktop-project-column'));
@@ -234,7 +235,7 @@ window.__ModuleLoader__.load({
       };
       const wait = new MutationObserver(attach); wait.observe(document.body, { childList: true, subtree: true }); attach();
       projectPanelLayout = { setPanel(width) { panelWidth = width; applyGrid(); } };
-      return () => { wait.disconnect(); observer?.disconnect(); if (frame && shellTracks.length === 3) frame.style.gridTemplateColumns = shellTracks.join(' '); handle?.remove(); column?.remove(); projectPanelColumn = null; projectPanelLayout = null; };
+      return () => { wait.disconnect(); observer?.disconnect(); if (frame && shellTracks.length === 3) frame.style.gridTemplateColumns = shellTracks.join(' '); if (frame) delete frame.dataset.dshDesktopFrame; handle?.remove(); column?.remove(); projectPanelColumn = null; projectPanelLayout = null; };
     }
 
     function interceptProducedFileClicks() {
@@ -268,7 +269,7 @@ window.__ModuleLoader__.load({
           const custom = snapshot.recommended?.find((entry) => entry.id === CUSTOM_BACKGROUND_ID)?.status === 'enabled';
           const background = custom ? await api.pluginCenter.backgroundGet() : null;
           imageStyle?.remove(); imageStyle = null;
-          if (background?.dataUrl) { imageStyle = document.createElement('style'); imageStyle.dataset.dshDesktopTheme = CUSTOM_BACKGROUND_ID; imageStyle.textContent = `html,body,#root{background:transparent!important}body{background:#07131d!important}[data-dsh-frame]{background-image:linear-gradient(rgba(4,12,20,.46),rgba(4,12,20,.58)),url(${JSON.stringify(background.dataUrl)})!important;background-position:center!important;background-size:cover!important;background-repeat:no-repeat!important;background-attachment:fixed!important}[data-dsh-frame]>*{background-color:color-mix(in srgb,var(--dsw-alias-bg-base) 76%,transparent)!important;backdrop-filter:blur(8px)}[data-dsh-frame] [data-dpp-preview-column]{background-color:color-mix(in srgb,var(--dsw-alias-bg-base) 82%,transparent)!important}`; document.head.appendChild(imageStyle); }
+          if (background?.dataUrl) { imageStyle = document.createElement('style'); imageStyle.dataset.dshDesktopTheme = CUSTOM_BACKGROUND_ID; imageStyle.textContent = `html,body,#root{background:transparent!important}body{background:#07131d!important}[data-dsh-desktop-frame="true"]{background-image:linear-gradient(rgba(4,12,20,.46),rgba(4,12,20,.58)),url(${JSON.stringify(background.dataUrl)})!important;background-position:center!important;background-size:cover!important;background-repeat:no-repeat!important;background-attachment:fixed!important}[data-dsh-desktop-frame="true"]>*{background-color:color-mix(in srgb,var(--dsw-alias-bg-base) 76%,transparent)!important;backdrop-filter:blur(8px)}[data-dsh-desktop-frame="true"] [data-dpp-preview-column]{background-color:color-mix(in srgb,var(--dsw-alias-bg-base) 82%,transparent)!important}`; document.head.appendChild(imageStyle); }
         } catch (error) { console.error('managed theme sync failed', error); }
       };
       sync(); const listener = () => { if (!cancelled) sync(); }; window.addEventListener('dsh-desktop-plugin-catalog-change', listener);
