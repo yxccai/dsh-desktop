@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "plugins": [
+    {
+      "id": "desktop-writing",
+      "name": "桌面写作助手",
+      "description": "轻量写作、改写、总结与翻译 Agent。",
+      "version": "1.0.0",
+      "author": "DSH Desktop",
+      "source": "Bundled",
+      "permissions": ["Persona prompt only"],
+      "bundledDir": "desktop-writing",
+      "digest": "89376a7ec4637e2b96bcbd35048ecbafdf7bf0051f82e72ae9ca0fe74a694789"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'self'; img-src 'self' data:">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>DSH 插件中心</title>
+  <style>
+    :root{color-scheme:dark;font-family:Inter,"Microsoft YaHei",system-ui,sans-serif;background:#0b111b;color:#edf3fb}*{box-sizing:border-box}body{margin:0;min-width:680px}.top{padding:28px 32px 22px;background:linear-gradient(135deg,#142136,#0d1725);border-bottom:1px solid #27364c}.top h1{margin:0 0 7px;font-size:25px}.top p{margin:0;color:#9fb0c6}.toolbar{display:flex;align-items:center;gap:10px;padding:18px 32px 4px}.toolbar button:last-child{margin-left:auto}.tabs{display:flex;gap:7px;padding:12px 32px}.tab.active{background:#3577e5;color:white}.content{padding:8px 32px 32px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}.card{background:#111c2c;border:1px solid #27364c;border-radius:14px;padding:19px;box-shadow:0 8px 30px #0003}.title{display:flex;gap:12px;align-items:flex-start}.icon{width:42px;height:42px;display:grid;place-items:center;border-radius:12px;background:#1e3d70;color:#b9d3ff;font-weight:800}.title h2{margin:0 0 4px;font-size:17px}.meta,.desc,.permissions,.hint{color:#9fb0c6;font-size:13px}.desc{line-height:1.55;min-height:40px;margin:16px 0}.badge{display:inline-block;padding:3px 8px;border-radius:999px;font-size:12px;background:#263850;color:#b8c8dc}.badge.enabled{background:#163f32;color:#8de0bc}.badge.disabled{background:#4c3718;color:#ffd18a}.badge.conflict{background:#4b2430;color:#ffafc3}.actions{display:flex;gap:8px;margin-top:16px}button{border:0;border-radius:9px;padding:9px 13px;background:#24344a;color:#eaf2fc;cursor:pointer}button:hover{background:#314763}button.primary{background:#3577e5}button.danger{background:#6a2e3b}button:disabled{opacity:.45;cursor:default}.empty{padding:42px;text-align:center;color:#8da0b8}.notice{margin:12px 32px;padding:11px 14px;border-radius:9px;background:#18283d;color:#adc3df;font-size:13px}.notice.error{background:#4b2430;color:#ffc1d0}
+  </style>
+</head>
+<body>
+  <header class="top"><h1>插件中心</h1><p>发现并管理 DSH Desktop 推荐的 Agent Preset。</p></header>
+  <div id="notice" class="notice">启用、停用或卸载会影响新会话，当前正在运行的会话不会被中断。</div>
+  <div class="toolbar"><button id="refresh">刷新</button><button id="folder">打开插件目录</button></div>
+  <nav class="tabs"><button class="tab active" data-tab="recommended">推荐插件</button><button class="tab" data-tab="installed">已安装</button><button class="tab" data-tab="external">其他 Preset</button></nav>
+  <main id="content" class="content"><div class="empty">正在加载…</div></main>
+  <script src="plugin-center.js"></script>
+</body>
+</html>

@@ -1,11 +1,12 @@
 'use strict';
 
-const { app, BrowserWindow, Menu, Tray, nativeImage, shell, dialog } = require('electron');
+const { app, BrowserWindow, Menu, Tray, nativeImage, shell, dialog, ipcMain } = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
 const { RuntimeManager } = require('./runtime-manager');
 const { configDefaults, loadConfig } = require('./config');
 const { detectEnvironment } = require('./environment-detector');
+const { PluginManager } = require('./plugin-manager');
 
 // Keep desktop-only state separate from DSH_HOME. Users who avoid the system
 // drive can set DSH_DESKTOP_HOME before launching the app.
@@ -14,8 +15,10 @@ if (process.env.DSH_DESKTOP_HOME) {
 }
 
 let mainWindow = null;
+let pluginCenterWindow = null;
 let tray = null;
 let runtime = null;
+let pluginManager = null;
 let config = null;
 let quitting = false;
 
@@ -87,6 +90,59 @@ function createWindow() {
   mainWindow.loadURL(config.url).catch((error) => log(`loadURL failed: ${error.message}`));
 }
 
+function createPluginCenterWindow() {
+  if (pluginCenterWindow && !pluginCenterWindow.isDestroyed()) {
+    pluginCenterWindow.show();
+    pluginCenterWindow.focus();
+    return;
+  }
+  pluginCenterWindow = new BrowserWindow({
+    width: 980,
+    height: 720,
+    minWidth: 720,
+    minHeight: 520,
+    title: 'DSH 插件中心',
+    autoHideMenuBar: true,
+    webPreferences: {
+      preload: path.join(__dirname, 'plugin-center-preload.js'),
+      nodeIntegration: false,
+      contextIsolation: true,
+      sandbox: true,
+      webSecurity: true,
+    },
+  });
+  pluginCenterWindow.webContents.session.setPermissionCheckHandler(() => false);
+  pluginCenterWindow.webContents.session.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
+  pluginCenterWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  pluginCenterWindow.webContents.on('will-navigate', (event, target) => {
+    if (target !== pluginCenterWindow.webContents.getURL()) event.preventDefault();
+  });
+  pluginCenterWindow.on('closed', () => { pluginCenterWindow = null; });
+  pluginCenterWindow.loadFile(path.join(__dirname, 'plugin-center.html'));
+}
+
+function isPluginCenterSender(event) {
+  return Boolean(pluginCenterWindow && !pluginCenterWindow.isDestroyed() && event.sender === pluginCenterWindow.webContents);
+}
+
+function registerPluginCenterIpc() {
+  const handle = (channel, operation) => ipcMain.handle(channel, async (event, value) => {
+    if (!isPluginCenterSender(event)) throw new Error('不允许的插件中心请求');
+    return operation(value);
+  });
+  handle('plugin-center:list', () => pluginManager.list());
+  handle('plugin-center:install', (id) => pluginManager.install(id));
+  handle('plugin-center:enable', (id) => pluginManager.setEnabled(id, true));
+  handle('plugin-center:disable', (id) => pluginManager.setEnabled(id, false));
+  handle('plugin-center:uninstall', (id) => pluginManager.uninstall(id));
+  handle('plugin-center:open-folder', async () => {
+    fs.mkdirSync(path.join(config.dshHome, '.agent-presets'), { recursive: true });
+    const result = await shell.openPath(path.join(config.dshHome, '.agent-presets'));
+    if (result) throw new Error(result);
+    return true;
+  });
+}
+
 function createTray() {
   const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><rect rx="7" width="32" height="32" fill="#182230"/><text x="16" y="22" font-family="Arial" font-size="16" text-anchor="middle" fill="white">DS</text></svg>';
   const image = nativeImage.createFromDataURL(`data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`).resize({ width: 16, height: 16 });
@@ -95,6 +151,7 @@ function createTray() {
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: '显示 DSH', click: () => { mainWindow?.show(); mainWindow?.focus(); } },
     { label: '在浏览器中打开', click: () => shell.openExternal(config.url) },
+    { label: '插件中心', click: createPluginCenterWindow },
     { label: '打开日志目录', click: () => shell.openPath(app.getPath('userData')) },
     { type: 'separator' },
     { label: '退出', click: () => requestQuit(true) },
@@ -112,6 +169,8 @@ async function requestQuit(stopOwned) {
   // not retain the single-instance lock after the visible window is closed.
   try { tray?.destroy(); } catch {}
   tray = null;
+  try { pluginCenterWindow?.destroy(); } catch {}
+  pluginCenterWindow = null;
   try { mainWindow?.destroy(); } catch {}
   mainWindow = null;
   app.exit(0);
@@ -122,6 +181,13 @@ async function start() {
   const defaults = configDefaults(paths);
   config = loadConfig(userFile('config.json'), defaults);
   if (!fs.existsSync(config.dshHome)) fs.mkdirSync(config.dshHome, { recursive: true });
+  const resourceRoot = app.isPackaged ? process.resourcesPath : path.join(app.getAppPath(), 'resources');
+  pluginManager = new PluginManager({
+    dshHome: config.dshHome,
+    catalogPath: path.join(resourceRoot, 'plugin-catalog.json'),
+    bundleRoot: path.join(resourceRoot, 'plugins'),
+  });
+  registerPluginCenterIpc();
   const environment = await detectEnvironment({
     appPath: app.getAppPath(),
     resourcesPath: process.resourcesPath,

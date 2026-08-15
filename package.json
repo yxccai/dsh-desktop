@@ -1,6 +1,6 @@
 {
   "name": "dsh-desktop-shell",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Unofficial cross-platform desktop shell with a bundled fallback runtime for DeepSeek Harness Web.",
   "author": "DSH Desktop contributors",
   "license": "MIT",
@@ -9,7 +9,7 @@
   "scripts": {
     "start": "electron .",
     "dev": "electron .",
-    "check": "node --check src/main.js && node --check src/preload.js && node --check src/runtime-manager.js && node --check src/config.js && node --check src/environment-detector.js",
+    "check": "node --check src/main.js && node --check src/preload.js && node --check src/plugin-center-preload.js && node --check src/plugin-center.js && node --check src/plugin-manager.js && node --check src/runtime-manager.js && node --check src/config.js && node --check src/environment-detector.js",
     "test": "node --test",
     "build": "electron-builder --win nsis portable",
     "build:win": "electron-builder --win nsis portable --x64",
@@ -42,6 +42,9 @@
       "README.md",
       "LICENSE",
       "THIRD_PARTY_LICENSES.md"
+    ],
+    "extraResources": [
+      { "from": "resources", "to": ".", "filter": ["**/*"] }
     ],
     "directories": { "output": "dist" },
     "win": {

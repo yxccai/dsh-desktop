@@ -11,6 +11,7 @@ An unofficial open-source desktop app for [DeepSeek Harness](https://github.com/
 - **Automatic reuse**: Prefers existing DSH data, settings, sessions, and compatible plugins.
 - **Full Web experience**: Uses the original DSH Web UI for maximum feature and plugin compatibility.
 - **Secure isolation**: The Web page receives no direct Node.js, filesystem, or arbitrary command access.
+- **Plugin Center**: Install, enable, disable, and manage recommended Agent Presets without overwriting existing user content.
 - **Built to grow**: Setup guidance, updates, more desktop features, and broader platform support are planned.
 
 ## Download
