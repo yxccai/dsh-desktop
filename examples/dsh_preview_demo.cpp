@@ -20,7 +20,8 @@ int main() {
                   << file.name << '\n';
     }
 
-    // Edited after creation: this line makes the demo visibly different.
-    std::cout << "Resizable right-side Grid panel is ready — drag its left edge.\n";
+    // Committed files still belong to a turn and remain recoverable by snapshots.
+    std::cout << "DSH preview auto-opens this committed C++ file.\n";
+    std::cout << "Drag the divider mounted directly on the DSH frame.\n";
     return 0;
 }
