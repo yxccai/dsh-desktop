@@ -1,5 +1,9 @@
 # DSH Desktop
 
+<p align="center">
+  <img src="docs/images/social-preview.jpg" alt="DSH Desktop——探索未至之境" width="100%">
+</p>
+
 [English](README.md) | 简体中文
 
 一个基于 DeepSeek Harness 的非官方开源桌面端，提供更简单、直观的桌面使用体验。

@@ -1,5 +1,9 @@
 # DSH Desktop
 
+<p align="center">
+  <img src="docs/images/social-preview.jpg" alt="DSH Desktop — Explore the Uncharted" width="100%">
+</p>
+
 English | [简体中文](README.zh-CN.md)
 
 An unofficial open-source desktop app for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness), designed to provide a simpler and more convenient desktop experience.
