@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased - Project Panel Preview
+## 0.4.0 - Project Panel, Themes, and Snapshot Preview
 
 - Allow clipboard writes from the identity-verified loopback DSH page so built-in copy icons and Copy buttons work in the desktop shell, while continuing to deny clipboard reads and untrusted origins.
 - Anchor the project-panel resize handle to the right-side Grid track instead of a cached frame-width pixel offset, preventing divider hit-target drift after layout changes.
@@ -17,6 +17,7 @@
 - Disable interactive Git prompts, bound Git command duration/output, and keep Git invocation on fixed argument arrays.
 - Require the DSH workspace root to exactly match the Git repository root, preventing nested workspaces from reaching ancestor repository files.
 - Serialize snapshot mutations and preflight snapshot patches before applying them, so a rejected restore leaves the workspace unchanged.
+- Add managed Ocean and custom image background themes with native image selection, reversible token overrides, and noninteractive background layers.
 
 ## 0.3.0 - Plugin Center Preview
 

@@ -19,9 +19,23 @@
 
 请从 [GitHub Releases](https://github.com/yxccai/dsh-desktop/releases) 下载。
 
-- [Windows x64 安装版](https://github.com/yxccai/dsh-desktop/releases/download/v0.2.0/DSH-Desktop-Setup-0.2.0-win-x64.exe)
-- [Windows x64 便携版](https://github.com/yxccai/dsh-desktop/releases/download/v0.2.0/DSH-Desktop-Portable-0.2.0-win-x64.exe)
-- [SHA-256 校验文件](https://github.com/yxccai/dsh-desktop/releases/download/v0.2.0/SHA256SUMS-0.2.0.txt)
+- [Windows x64 安装版](https://github.com/yxccai/dsh-desktop/releases/download/v0.4.0/DSH-Desktop-Setup-0.4.0-win-x64.exe)
+- [Windows x64 便携版](https://github.com/yxccai/dsh-desktop/releases/download/v0.4.0/DSH-Desktop-Portable-0.4.0-win-x64.exe)
+- [SHA-256 校验文件](https://github.com/yxccai/dsh-desktop/releases/download/v0.4.0/SHA256SUMS-0.4.0.txt)
+
+## 界面截图
+
+### 对话文件与项目预览面板
+
+![支持完整上下文变更的项目面板](docs/images/project-panel.png)
+
+### 对话快照与单文件回原
+
+![对话快照和回原控制](docs/images/conversation-snapshots.png)
+
+### 可管理的插件中心
+
+![DSH Desktop 插件中心](docs/images/plugin-center.png)
 
 ## 工作方式
 

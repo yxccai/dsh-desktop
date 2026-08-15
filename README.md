@@ -19,9 +19,23 @@ An unofficial open-source desktop app for [DeepSeek Harness](https://github.com/
 
 Download from [GitHub Releases](https://github.com/yxccai/dsh-desktop/releases):
 
-- [Windows x64 Setup](https://github.com/yxccai/dsh-desktop/releases/download/v0.2.0/DSH-Desktop-Setup-0.2.0-win-x64.exe)
-- [Windows x64 Portable](https://github.com/yxccai/dsh-desktop/releases/download/v0.2.0/DSH-Desktop-Portable-0.2.0-win-x64.exe)
-- [SHA-256 checksums](https://github.com/yxccai/dsh-desktop/releases/download/v0.2.0/SHA256SUMS-0.2.0.txt)
+- [Windows x64 Setup](https://github.com/yxccai/dsh-desktop/releases/download/v0.4.0/DSH-Desktop-Setup-0.4.0-win-x64.exe)
+- [Windows x64 Portable](https://github.com/yxccai/dsh-desktop/releases/download/v0.4.0/DSH-Desktop-Portable-0.4.0-win-x64.exe)
+- [SHA-256 checksums](https://github.com/yxccai/dsh-desktop/releases/download/v0.4.0/SHA256SUMS-0.4.0.txt)
+
+## Screenshots
+
+### Conversation-aware project panel
+
+![Project panel with full-context file changes](docs/images/project-panel.png)
+
+### Conversation snapshots and per-file rollback
+
+![Conversation snapshots and rollback controls](docs/images/conversation-snapshots.png)
+
+### Managed Plugin Center
+
+![DSH Desktop Plugin Center](docs/images/plugin-center.png)
 
 ## How it works
 

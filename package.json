@@ -1,6 +1,6 @@
 {
   "name": "dsh-desktop-shell",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Unofficial cross-platform desktop shell with a bundled fallback runtime for DeepSeek Harness Web.",
   "author": "DSH Desktop contributors",
   "license": "MIT",
@@ -27,7 +27,9 @@
     "electron": "^39.0.0",
     "electron-builder": "^26.0.0"
   },
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "build": {
     "appId": "community.dsh.desktop",
     "productName": "DSH Desktop",
@@ -45,11 +47,22 @@
       "THIRD_PARTY_LICENSES.md"
     ],
     "extraResources": [
-      { "from": "resources", "to": ".", "filter": ["**/*"] }
+      {
+        "from": "resources",
+        "to": ".",
+        "filter": [
+          "**/*"
+        ]
+      }
     ],
-    "directories": { "output": "dist" },
+    "directories": {
+      "output": "dist"
+    },
     "win": {
-      "target": ["nsis", "portable"],
+      "target": [
+        "nsis",
+        "portable"
+      ],
       "artifactName": "DSH-Desktop-${version}-${os}-${arch}.${ext}"
     },
     "nsis": {
@@ -59,12 +72,29 @@
       "deleteAppDataOnUninstall": false
     },
     "mac": {
-      "target": [{ "target": "dmg", "arch": ["x64", "arm64"] }, { "target": "zip", "arch": ["x64", "arm64"] }],
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
       "artifactName": "DSH-Desktop-${version}-${os}-${arch}.${ext}",
       "category": "public.app-category.developer-tools",
       "hardenedRuntime": true,
       "gatekeeperAssess": false
     },
-    "dmg": { "sign": false }
+    "dmg": {
+      "sign": false
+    }
   }
 }
