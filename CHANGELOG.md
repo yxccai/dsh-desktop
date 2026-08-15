@@ -1,0 +1,47 @@
+# Changelog
+
+## 0.2.0 - Hybrid Runtime Preview
+
+- Bundle the complete production dependency graph of `@deepseek-ai/dsh` 0.1.0-rc.6.
+- Run the bundled DSH CLI using Electron's embedded Node runtime with required internals enabled.
+- Detect and prefer an existing DSH service, global DSH, or system npx before bundled fallback.
+- Add explicit `bundled` launch mode and system-first/bundled-first preferences.
+- Preserve existing `DSH_HOME` and npm cache environment paths.
+- Add Windows NSIS/portable and macOS x64/arm64 DMG/ZIP build targets.
+- Add Windows/macOS GitHub Actions build matrix and third-party notices.
+- Expand hybrid-runtime tests and verify an isolated bundled DSH service on Windows.
+
+## 0.1.2 - Developer Preview
+
+- Destroy the tray and main window before a hard Electron exit so the single-instance lock is released reliably.
+- Recreate a missing window when a second-instance event reaches a still-running process.
+- Verify on Windows that closing leaves zero desktop processes and a second launch succeeds.
+- Prefer the E-drive unpacked build for the local desktop shortcut, avoiding portable extraction into the system Temp directory.
+
+## 0.1.1 - Developer Preview
+
+- Execute Windows npm command shims through `ComSpec` instead of spawning `.cmd` files directly.
+- Verify DSH bootstrap markers before connecting to a local HTTP service.
+- Fall back from an unsuccessful global command to npx after cleaning its process tree.
+- Clean up owned processes on startup failure and strengthen termination fallback.
+- Validate configuration types, loopback URL, enums, arguments, and timeouts.
+- Deny renderer permission requests and all Electron popup windows by default.
+- Add optional DSH version pinning and expand tests from 3 to 7.
+
+## 0.1.0 - Developer Preview
+
+- Connect to an existing local DSH Web service without taking process ownership.
+- Launch DSH through a global command, npx, or trusted custom configuration.
+- Pass configurable `DSH_HOME` and npm cache paths to owned child processes.
+- Load the unmodified upstream Web UI in a sandboxed Electron window.
+- Restrict top-level navigation and open external links in the system browser.
+- Add tray controls, logging, single-instance behavior, and owned-process shutdown.
+- Add Windows NSIS and portable build targets.
+
+### Known limitations
+
+- No graphical settings editor yet; configuration is JSON.
+- No bundled Node.js or DSH runtime.
+- No code signing or automatic updates.
+- Client plugin compatibility follows the DSH/Cordis Web version served locally.
+- The Electron development dependency currently pulls `extract-zip` with the npm advisory GHSA-jmr9-qjv8-65gv and no upstream fix. `npm audit --omit=dev` reports zero production vulnerabilities; release builders should use trusted archives and revisit this before a stable release.

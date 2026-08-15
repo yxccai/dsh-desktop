@@ -1,0 +1,66 @@
+{
+  "name": "dsh-desktop-shell",
+  "version": "0.2.0",
+  "description": "Unofficial cross-platform desktop shell with a bundled fallback runtime for DeepSeek Harness Web.",
+  "author": "DSH Desktop contributors",
+  "license": "MIT",
+  "private": true,
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron .",
+    "check": "node --check src/main.js && node --check src/preload.js && node --check src/runtime-manager.js && node --check src/config.js && node --check src/environment-detector.js",
+    "test": "node --test",
+    "build": "electron-builder --win nsis portable",
+    "build:win": "electron-builder --win nsis portable --x64",
+    "build:win:setup": "electron-builder --win nsis --x64 --config.win.artifactName=DSH-Desktop-Setup-${version}-${os}-${arch}.${ext}",
+    "build:win:portable": "electron-builder --win portable --x64 --config.win.artifactName=DSH-Desktop-Portable-${version}-${os}-${arch}.${ext}",
+    "build:mac:x64": "electron-builder --mac dmg zip --x64",
+    "build:mac:arm64": "electron-builder --mac dmg zip --arm64",
+    "pack": "electron-builder --dir"
+  },
+  "dependencies": {
+    "@deepseek-ai/dsh": "0.1.0-rc.6"
+  },
+  "devDependencies": {
+    "electron": "^39.0.0",
+    "electron-builder": "^26.0.0"
+  },
+  "engines": { "node": ">=20" },
+  "build": {
+    "appId": "community.dsh.desktop",
+    "productName": "DSH Desktop",
+    "asar": true,
+    "npmRebuild": false,
+    "asarUnpack": [
+      "node_modules/**/*"
+    ],
+    "files": [
+      "src/**/*",
+      "node_modules/**/*",
+      "package.json",
+      "README.md",
+      "LICENSE",
+      "THIRD_PARTY_LICENSES.md"
+    ],
+    "directories": { "output": "dist" },
+    "win": {
+      "target": ["nsis", "portable"],
+      "artifactName": "DSH-Desktop-${version}-${os}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "deleteAppDataOnUninstall": false
+    },
+    "mac": {
+      "target": [{ "target": "dmg", "arch": ["x64", "arm64"] }, { "target": "zip", "arch": ["x64", "arm64"] }],
+      "artifactName": "DSH-Desktop-${version}-${os}-${arch}.${ext}",
+      "category": "public.app-category.developer-tools",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false
+    },
+    "dmg": { "sign": false }
+  }
+}
