@@ -37,6 +37,18 @@ test('lists, searches, reads, and atomically saves workspace files', async (t) =
   assert.equal(fs.readFileSync(path.join(workspace, 'README.md'), 'utf8'), '# Updated\n');
 });
 
+test('restricts roots to workspaces registered by DSH', (t) => {
+  const { root, workspace } = fixture(t);
+  const dshHome = path.join(root, 'dsh');
+  fs.mkdirSync(path.join(dshHome, 'storages'), { recursive: true });
+  fs.writeFileSync(path.join(dshHome, 'storages', 'workspace.json'), JSON.stringify({ tables: { workspaces: { one: { path: workspace } } } }));
+  const manager = new ProjectPanelManager({ stateRoot: path.join(root, 'state-secure'), dshHome });
+  assert.equal(manager.list(workspace, '').items.length, 2);
+  const other = path.join(root, 'other');
+  fs.mkdirSync(other);
+  assert.throws(() => manager.list(other, ''), /未在 DSH 中注册/);
+});
+
 test('rejects traversal and stale saves', (t) => {
   const { workspace, manager } = fixture(t);
   assert.throws(() => manager.read(workspace, '../outside.txt'), /超出工作区/);

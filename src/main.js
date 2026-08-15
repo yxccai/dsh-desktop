@@ -212,7 +212,7 @@ async function start() {
   config = loadConfig(userFile('config.json'), defaults);
   if (!fs.existsSync(config.dshHome)) fs.mkdirSync(config.dshHome, { recursive: true });
   const resourceRoot = app.isPackaged ? process.resourcesPath : path.join(app.getAppPath(), 'resources');
-  projectPanelManager = new ProjectPanelManager({ stateRoot: path.join(app.getPath('userData'), 'project-panel') });
+  projectPanelManager = new ProjectPanelManager({ stateRoot: path.join(app.getPath('userData'), 'project-panel'), dshHome: config.dshHome });
   pluginManager = new PluginManager({
     dshHome: config.dshHome,
     catalogPath: path.join(resourceRoot, 'plugin-catalog.json'),

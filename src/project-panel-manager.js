@@ -29,14 +29,30 @@ function isInside(root, target) {
 class ProjectPanelManager {
   constructor(options) {
     this.stateRoot = path.resolve(options.stateRoot);
+    this.dshHome = options.dshHome ? path.resolve(options.dshHome) : null;
     this.gitPath = options.gitPath || 'git';
     this.queues = new Map();
+  }
+
+  allowedRoots() {
+    if (!this.dshHome) return null;
+    const registry = path.join(this.dshHome, 'storages', 'workspace.json');
+    try {
+      const data = JSON.parse(fs.readFileSync(registry, 'utf8'));
+      const rows = Object.values(data?.tables?.workspaces || {});
+      return new Set(rows.flatMap((row) => {
+        try { return typeof row?.path === 'string' ? [fs.realpathSync.native(path.resolve(row.path)).toLowerCase()] : []; }
+        catch { return []; }
+      }));
+    } catch { return new Set(); }
   }
 
   resolveRoot(value) {
     if (typeof value !== 'string' || value.length < 2 || value.length > 2048 || value.includes('\0')) throw new Error('工作区路径无效');
     const root = fs.realpathSync.native(path.resolve(value));
     if (!fs.statSync(root).isDirectory()) throw new Error('工作区不是目录');
+    const allowed = this.allowedRoots();
+    if (allowed && !allowed.has(root.toLowerCase())) throw new Error('工作区未在 DSH 中注册');
     return root;
   }
 
@@ -147,7 +163,8 @@ class ProjectPanelManager {
 
   async git(root, args, options = {}) {
     try {
-      return await execFileAsync(this.gitPath, ['-C', root, ...args], { encoding: options.encoding || 'utf8', maxBuffer: options.maxBuffer || 16 * 1024 * 1024, windowsHide: true, env: options.env || process.env });
+      const env = { ...process.env, GIT_TERMINAL_PROMPT: '0', GCM_INTERACTIVE: 'Never', GIT_PAGER: 'cat', GIT_EDITOR: 'true', ...(options.env || {}) };
+      return await execFileAsync(this.gitPath, ['-C', root, ...args], { encoding: options.encoding || 'utf8', maxBuffer: options.maxBuffer || 16 * 1024 * 1024, windowsHide: true, timeout: 15000, killSignal: 'SIGKILL', env });
     } catch (error) {
       const message = String(error.stderr || error.message || 'Git 操作失败').trim();
       throw new Error(message.slice(0, 2000));
