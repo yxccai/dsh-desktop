@@ -43,7 +43,12 @@ DSH Desktop 不是重新实现的桌面端，而是把官方 DSH Web 完整装�
 
 ### macOS 测试版
 
-- [macOS 预发布版（Intel / Apple Silicon）](https://github.com/yxccai/dsh-desktop/releases/tag/v0.5.0)
+Apple Silicon（M 系列）:
+
+- [macOS arm64 DMG](https://github.com/yxccai/dsh-desktop/releases/download/v0.5.0/DSH-Desktop-0.5.0-mac-arm64.dmg)
+- [macOS arm64 ZIP](https://github.com/yxccai/dsh-desktop/releases/download/v0.5.0/DSH-Desktop-0.5.0-mac-arm64.zip)
+
+Intel 版（x64）构建完成后可在 [Releases 页面](https://github.com/yxccai/dsh-desktop/releases/tag/v0.5.0) 找到。
 
 首次启动时，请在 Finder 中按住 Control 点击应用并选择「打开」；若 macOS 仍阻止运行，请前往「系统设置 → 隐私与安全性 → 仍要打开」。正式签名与公证将在后续版本加入。
 

@@ -45,7 +45,12 @@ Download from [GitHub Releases](https://github.com/yxccai/dsh-desktop/releases/t
 
 ### macOS (test build)
 
-- [macOS prerelease (Intel / Apple Silicon)](https://github.com/yxccai/dsh-desktop/releases/tag/v0.5.0)
+Apple Silicon (M-series):
+
+- [macOS arm64 DMG](https://github.com/yxccai/dsh-desktop/releases/download/v0.5.0/DSH-Desktop-0.5.0-mac-arm64.dmg)
+- [macOS arm64 ZIP](https://github.com/yxccai/dsh-desktop/releases/download/v0.5.0/DSH-Desktop-0.5.0-mac-arm64.zip)
+
+The Intel (x64) build appears on the [Releases page](https://github.com/yxccai/dsh-desktop/releases/tag/v0.5.0) once the runner finishes.
 
 On first launch, Control-click the app in Finder and choose **Open**. If macOS still blocks it, go to **System Settings → Privacy & Security → Open Anyway**. Signing and notarization are planned for a future release.
 
