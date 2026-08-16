@@ -153,6 +153,38 @@ test('vendored bundle digest is pinned and stable', () => {
   assert.equal(digestDirectory(REAL_BUNDLE), VENDORED_DIGEST, 'resources/market-plugin must match the pinned digest');
 });
 
+test('digest is platform/build-stable across CRLF and LF line endings', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dsh-web-market-eol-'));
+  try {
+    const copy = path.join(root, 'bundle');
+    fs.cpSync(REAL_BUNDLE, copy, { recursive: true });
+    const sourceDigest = digestDirectory(REAL_BUNDLE);
+
+    // Representative Windows checkout / packaged copy: every text file CRLF.
+    const convert = (dir, rewrite) => fs.readdirSync(dir, { withFileTypes: true }).forEach((entry) => {
+      const target = path.join(dir, entry.name);
+      if (entry.isDirectory()) return convert(target, rewrite);
+      const data = fs.readFileSync(target);
+      if (!data.includes(0)) fs.writeFileSync(target, rewrite(data.toString('latin1')), 'latin1');
+    });
+    const toCrlf = (s) => s.replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/\n/g, '\r\n');
+    const toLf = (s) => s.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    convert(copy, toCrlf);
+    assert.equal(digestDirectory(copy), sourceDigest, 'CRLF tree must hash identically to the source tree');
+    assert.equal(digestDirectory(copy), VENDORED_DIGEST, 'CRLF tree must match the pinned digest');
+
+    // All-LF tree (fresh POSIX checkout).
+    convert(copy, toLf);
+    assert.equal(digestDirectory(copy), VENDORED_DIGEST, 'LF tree must match the pinned digest');
+
+    // A real content change is still detected even though line endings are not.
+    fs.appendFileSync(path.join(copy, 'lib', 'host.js'), '\n// tamper\n');
+    assert.notEqual(digestDirectory(copy), VENDORED_DIGEST, 'content tampering must change the digest');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('renderBlock produces the enabled insert and disabled forms', () => {
   const enabled = renderBlock(true);
   assert.match(enabled, /- insert:/);

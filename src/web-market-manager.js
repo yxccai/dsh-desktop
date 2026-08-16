@@ -40,8 +40,20 @@ const REQUIRED_FILES = [
   path.join('data', 'catalog-snapshot.json'),
   'cordis.patch.yml',
 ];
+/**
+ * Known text files whose line endings are normalized (CRLF/CR -> LF) before
+ * hashing, so the vendored-tree digest stays identical no matter how the
+ * checkout or the packaging pipeline wrote them (git core.autocrlf, zip,
+ * asar, NSIS). Everything else is treated as binary and hashed byte-for-byte.
+ */
+const TEXT_EXTENSIONS = new Set(['.js', '.json', '.yml', '.yaml', '.md', '.txt']);
+const TEXT_BASENAMES = new Set([
+  'package.json', 'package-lock.json', 'pnpm-lock.yaml', 'yarn.lock', 'npm-shrinkwrap.json',
+  'LICENSE', 'LICENSE.md', 'LICENSE.txt', 'COPYING', 'NOTICE',
+]);
+
 /** Fixed digest of the vendored `resources/market-plugin` tree. */
-const VENDORED_DIGEST = '2ea80b1c9dfc5c28a45c3108a95a0444da9ba1ecb0b22536b16dd2516cea182c';
+const VENDORED_DIGEST = 'd43e761433db39e2e3cb69425e020a40661eae00061419ba073da7f85cebb314';
 
 function readJson(file, fallback) {
   try { return JSON.parse(fs.readFileSync(file, 'utf8')); }
@@ -58,6 +70,17 @@ function safeChildren(root) {
   catch { return []; }
 }
 
+function isKnownTextFile(name) {
+  return TEXT_EXTENSIONS.has(path.extname(name).toLowerCase()) || TEXT_BASENAMES.has(name);
+}
+
+function normalizedText(buf) {
+  // latin1 is a byte-lossless decode: only the CRLF/CR -> LF rewrite can alter
+  // bytes, so a pure line-ending flip is invisible while any other content
+  // change still changes the digest (tampering stays detectable).
+  return buf.toString('latin1').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+}
+
 function digestDirectory(root) {
   const files = [];
   const walk = (directory, depth = 0) => {
@@ -70,7 +93,7 @@ function digestDirectory(root) {
       else {
         if (entry.name === MARKER_FILE) continue;
         if (stat.size > 1024 * 1024) throw new Error('市场文件过大');
-        files.push({ relative: path.relative(root, target).replaceAll('\\', '/'), target, size: stat.size });
+        files.push({ relative: path.relative(root, target).replaceAll('\\', '/'), target, size: stat.size, text: isKnownTextFile(entry.name) });
         if (files.length > 100) throw new Error('市场文件数量过多');
       }
     }
@@ -78,7 +101,13 @@ function digestDirectory(root) {
   walk(root);
   const total = files.reduce((sum, file) => sum + file.size, 0);
   if (total > 5 * 1024 * 1024) throw new Error('市场包总大小过大');
-  const listing = files.map((file) => `${file.relative}:${crypto.createHash('sha256').update(fs.readFileSync(file.target)).digest('hex')}`).join('\n');
+  const listing = files.map((file) => {
+    const data = fs.readFileSync(file.target);
+    // Known text files are normalized to LF; genuinely binary payloads (even
+    // under a text-looking extension) are hashed byte-for-byte.
+    const content = file.text && !data.includes(0) ? normalizedText(data) : data;
+    return `${file.relative}:${crypto.createHash('sha256').update(content).digest('hex')}`;
+  }).join('\n');
   return crypto.createHash('sha256').update(listing).digest('hex');
 }
 
