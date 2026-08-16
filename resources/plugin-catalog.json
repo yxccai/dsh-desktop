@@ -26,13 +26,13 @@
     {
       "id": "desktop-custom-background",
       "name": "自定义图片背景",
-      "description": "选择本地图片作为聊天背景，自动添加可读性遮罩，支持更换、清除和停用。",
-      "version": "1.0.0",
+      "description": "选择本地图片作为聊天背景，自动添加可读性遮罩，支持透明度调节、更换、清除和停用。",
+      "version": "1.1.0",
       "author": "DSH Desktop",
       "source": "Bundled",
       "permissions": ["Native image picker", "Copies one selected image to Desktop data"],
       "bundledDir": "desktop-custom-background",
-      "digest": "06d2eb7c24dacf0c6b0b3955bc36d36fddf54239a0cc559eea9a2ca684aa20db"
+      "digest": "a8e08d5f6e8886b032b7506f5cdf9dc861e374fcaf8f48712293c2bd0e39b65c"
     }
   ]
 }

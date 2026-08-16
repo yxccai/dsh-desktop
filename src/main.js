@@ -148,17 +148,34 @@ function registerPluginCenterIpc() {
   handle('plugin-center:enable', (id) => pluginManager.setEnabled(id, true));
   handle('plugin-center:disable', (id) => pluginManager.setEnabled(id, false));
   handle('plugin-center:uninstall', (id) => pluginManager.uninstall(id));
+  const normalizeBackgroundOpacity = (value) => {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) return 100;
+    return Math.min(100, Math.max(10, Math.round(parsed)));
+  };
   handle('plugin-center:background-get', () => {
     const file = userFile('custom-background.json');
-    try { const meta = JSON.parse(fs.readFileSync(file, 'utf8')); const image = userFile(path.join('themes', meta.file)); if (!fs.existsSync(image)) return null; return { name: meta.name, dataUrl: `data:${meta.mime};base64,${fs.readFileSync(image).toString('base64')}` }; } catch { return null; }
+    try { const meta = JSON.parse(fs.readFileSync(file, 'utf8')); const image = userFile(path.join('themes', meta.file)); if (!fs.existsSync(image)) return null; return { name: meta.name, dataUrl: `data:${meta.mime};base64,${fs.readFileSync(image).toString('base64')}`, opacity: normalizeBackgroundOpacity(meta.opacity) }; } catch { return null; }
   });
   handle('plugin-center:background-pick', async () => {
     const result = await dialog.showOpenDialog(mainWindow || pluginCenterWindow, { title: '选择主题背景图片', properties: ['openFile'], filters: [{ name: '背景图片', extensions: ['png','jpg','jpeg','webp','gif'] }] });
     if (result.canceled || result.filePaths.length !== 1) return null;
     const source = result.filePaths[0]; const stat = fs.statSync(source); if (!stat.isFile() || stat.size > 20 * 1024 * 1024) throw new Error('背景图片必须小于 20 MB');
     const ext = path.extname(source).toLowerCase(); const mime = ({ '.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.gif':'image/gif' })[ext]; if (!mime) throw new Error('不支持的背景图片格式');
-    const themes = userFile('themes'); fs.mkdirSync(themes, { recursive: true }); const name = `custom-background${ext}`; const target = path.join(themes, name); fs.copyFileSync(source, target); atomicWriteJson(userFile('custom-background.json'), { file: name, name: path.basename(source), mime });
-    return { name: path.basename(source), dataUrl: `data:${mime};base64,${fs.readFileSync(target).toString('base64')}` };
+    const themes = userFile('themes'); fs.mkdirSync(themes, { recursive: true }); const name = `custom-background${ext}`; const target = path.join(themes, name); fs.copyFileSync(source, target); atomicWriteJson(userFile('custom-background.json'), { file: name, name: path.basename(source), mime, opacity: 100 });
+    return { name: path.basename(source), dataUrl: `data:${mime};base64,${fs.readFileSync(target).toString('base64')}`, opacity: 100 };
+  });
+  handle('plugin-center:background-opacity', (value) => {
+    const opacity = normalizeBackgroundOpacity(value);
+    const file = userFile('custom-background.json');
+    try {
+      const meta = JSON.parse(fs.readFileSync(file, 'utf8'));
+      const next = { ...meta, opacity };
+      atomicWriteJson(file, next);
+      const image = userFile(path.join('themes', meta.file));
+      if (!fs.existsSync(image)) return null;
+      return { name: meta.name, dataUrl: `data:${meta.mime};base64,${fs.readFileSync(image).toString('base64')}`, opacity };
+    } catch { throw new Error('尚未设置自定义背景'); }
   });
   handle('plugin-center:background-clear', () => { try { const meta = JSON.parse(fs.readFileSync(userFile('custom-background.json'), 'utf8')); fs.rmSync(userFile(path.join('themes', meta.file)), { force: true }); } catch {} fs.rmSync(userFile('custom-background.json'), { force: true }); return null; });
   handle('plugin-center:open-folder', async () => {
