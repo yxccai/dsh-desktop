@@ -8,6 +8,19 @@ const ID_PATTERN = /^[a-z][a-z0-9-]{1,47}$/;
 const MARKER_FILE = '.dsh-desktop-plugin.json';
 const REQUIRED_FILE = 'agent.cordis.yml';
 
+/** Text-file line endings are normalized before hashing so a bundled preset's
+ * digest is identical no matter how the checkout or packaging wrote it (git
+ * core.autocrlf, zip, asar, NSIS). Everything else is hashed byte-for-byte. */
+const TEXT_EXTENSIONS = new Set(['.js', '.json', '.yml', '.yaml', '.md', '.txt']);
+
+function normalizedBytes(target, name) {
+  if (TEXT_EXTENSIONS.has(path.extname(name).toLowerCase())) {
+    const raw = fs.readFileSync(target);
+    if (!raw.includes(0)) return raw.toString('latin1').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  }
+  return fs.readFileSync(target);
+}
+
 function readJson(file, fallback) {
   try { return JSON.parse(fs.readFileSync(file, 'utf8')); }
   catch { return fallback; }
@@ -78,7 +91,7 @@ class PluginManager {
     walk(root);
     const total = files.reduce((sum, file) => sum + file.size, 0);
     if (total > 5 * 1024 * 1024) throw new Error('插件包总大小过大');
-    const listing = files.map((file) => `${file.relative}:${crypto.createHash('sha256').update(fs.readFileSync(file.target)).digest('hex')}`).join('\n');
+    const listing = files.map((file) => `${file.relative}:${crypto.createHash('sha256').update(normalizedBytes(file.target, file.relative)).digest('hex')}`).join('\n');
     return crypto.createHash('sha256').update(listing).digest('hex');
   }
 

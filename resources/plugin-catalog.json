@@ -8,9 +8,11 @@
       "version": "1.0.0",
       "author": "DSH Desktop",
       "source": "Bundled",
-      "permissions": ["Persona prompt only"],
+      "permissions": [
+        "Persona prompt only"
+      ],
       "bundledDir": "desktop-writing",
-      "digest": "89376a7ec4637e2b96bcbd35048ecbafdf7bf0051f82e72ae9ca0fe74a694789"
+      "digest": "3e36a89f684edeff5dbcdb1e6443a2402eb317d702023c80937a84b195cbec12"
     },
     {
       "id": "desktop-ocean-theme",
@@ -19,9 +21,12 @@
       "version": "1.0.0",
       "author": "DSH Desktop",
       "source": "Bundled",
-      "permissions": ["Client theme token overrides", "Presentation only"],
+      "permissions": [
+        "Client theme token overrides",
+        "Presentation only"
+      ],
       "bundledDir": "desktop-ocean-theme",
-      "digest": "d6d38fdd1d4aafe5ce58f17a6be0b05f2295239185479296c5dfd9a81c5ef4b5"
+      "digest": "7ac506396bc18ce4c94d1de6b0d147e67588d4a584324d474a387e32d5f1d1ed"
     },
     {
       "id": "desktop-custom-background",
@@ -30,9 +35,12 @@
       "version": "1.1.0",
       "author": "DSH Desktop",
       "source": "Bundled",
-      "permissions": ["Native image picker", "Copies one selected image to Desktop data"],
+      "permissions": [
+        "Native image picker",
+        "Copies one selected image to Desktop data"
+      ],
       "bundledDir": "desktop-custom-background",
-      "digest": "a8e08d5f6e8886b032b7506f5cdf9dc861e374fcaf8f48712293c2bd0e39b65c"
+      "digest": "42e9638180b46adaef5faf303011d4c9442b56e55cfad4185cfa1a2b7c4097c3"
     },
     {
       "id": "desktop-aurora-theme",
@@ -41,9 +49,12 @@
       "version": "1.0.0",
       "author": "DSH Desktop",
       "source": "Bundled",
-      "permissions": ["Client theme token overrides", "Presentation only"],
+      "permissions": [
+        "Client theme token overrides",
+        "Presentation only"
+      ],
       "bundledDir": "desktop-aurora-theme",
-      "digest": "9695785a65512d65ebd2b0b5d2f12d9c87c11ebb5770fa46e44806a078e2f0a2"
+      "digest": "cba7d9a4308dcb30d6a6c2165045c05a6e09c9817fa9c5f92c3c0cc2e40e0abd"
     },
     {
       "id": "desktop-rose-theme",
@@ -52,9 +63,12 @@
       "version": "1.0.0",
       "author": "DSH Desktop",
       "source": "Bundled",
-      "permissions": ["Client theme token overrides", "Presentation only"],
+      "permissions": [
+        "Client theme token overrides",
+        "Presentation only"
+      ],
       "bundledDir": "desktop-rose-theme",
-      "digest": "9cb1c4ed672242ef872de7927710a68177591223eaf57823347fc096ec2c28d2"
+      "digest": "8b219ce0fc430942a65c08495dacb579a9c00a1918cd6eb9cfa6937652733f65"
     },
     {
       "id": "desktop-sand-theme",
@@ -63,9 +77,12 @@
       "version": "1.0.0",
       "author": "DSH Desktop",
       "source": "Bundled",
-      "permissions": ["Client theme token overrides", "Presentation only"],
+      "permissions": [
+        "Client theme token overrides",
+        "Presentation only"
+      ],
       "bundledDir": "desktop-sand-theme",
-      "digest": "aba71c18d8c3e2c11f88855eed7eac7ca350d3de1bf519735a51f0a354512493"
+      "digest": "5dc21ac583c5a8c614a49806454449f4546cb4f9e8cbb276532780ad38ac7612"
     }
   ]
 }
