@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.1 - macOS Test Build
+
+- Add GitHub Actions builds for unsigned macOS Intel and Apple Silicon DMG/ZIP prereleases with SHA-256 manifests.
+- Document the first-launch Gatekeeper override for unsigned test packages.
+
 ## 0.4.0 - Project Panel, Themes, and Snapshot Preview
 
 - Allow clipboard writes from the identity-verified loopback DSH page so built-in copy icons and Copy buttons work in the desktop shell, while continuing to deny clipboard reads and untrusted origins.

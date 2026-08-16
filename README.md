@@ -65,7 +65,7 @@ Plugins built on official DSH/Cordis services, Host tools, UI slots, themes, and
 ## Platform support
 
 - **Windows x64**: Setup and portable builds are available and tested.
-- **macOS Intel / Apple Silicon**: Build workflows are configured; testing, signing, and release work are ongoing.
+- **macOS Intel / Apple Silicon**: Unsigned test builds are published as prereleases. On first launch, Control-click the app in Finder and choose **Open**; if macOS still blocks it, use **System Settings → Privacy & Security → Open Anyway**. Signing and notarization are planned.
 - Additional platforms may be considered in future versions.
 
 ## Development
