@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Add three bundled managed color themes alongside the Ocean theme — Aurora (green/violet), Rose (sunset pink), and Sand (warm amber) — each with light/dark token overrides and a reversible gradient background, selectable and swatch-previewed in the Plugin Center.
+- Generalize the managed theme bridge so Plugin Center lists every bundled theme, applies token overrides for the enabled theme, and fully removes the previous theme's token layer and background styles when switching or disabling.
+
 ## 0.4.1 - macOS Test Build
 
 - Add GitHub Actions builds for unsigned macOS Intel and Apple Silicon DMG/ZIP prereleases with SHA-256 manifests.

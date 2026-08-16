@@ -33,6 +33,39 @@
       "permissions": ["Native image picker", "Copies one selected image to Desktop data"],
       "bundledDir": "desktop-custom-background",
       "digest": "a8e08d5f6e8886b032b7506f5cdf9dc861e374fcaf8f48712293c2bd0e39b65c"
+    },
+    {
+      "id": "desktop-aurora-theme",
+      "name": "极光绿紫主题",
+      "description": "极光绿与紫罗兰渐变背景、清新半透明层级和绿色强调色，支持明暗模式并可随时停用。",
+      "version": "1.0.0",
+      "author": "DSH Desktop",
+      "source": "Bundled",
+      "permissions": ["Client theme token overrides", "Presentation only"],
+      "bundledDir": "desktop-aurora-theme",
+      "digest": "9695785a65512d65ebd2b0b5d2f12d9c87c11ebb5770fa46e44806a078e2f0a2"
+    },
+    {
+      "id": "desktop-rose-theme",
+      "name": "玫瑰落日主题",
+      "description": "玫瑰落日渐变背景、暖粉半透明层级和玫红强调色，支持明暗模式并可随时停用。",
+      "version": "1.0.0",
+      "author": "DSH Desktop",
+      "source": "Bundled",
+      "permissions": ["Client theme token overrides", "Presentation only"],
+      "bundledDir": "desktop-rose-theme",
+      "digest": "9cb1c4ed672242ef872de7927710a68177591223eaf57823347fc096ec2c28d2"
+    },
+    {
+      "id": "desktop-sand-theme",
+      "name": "暖沙琥珀主题",
+      "description": "暖沙琥珀渐变背景、柔和奶油半透明层级和琥珀强调色，支持明暗模式并可随时停用。",
+      "version": "1.0.0",
+      "author": "DSH Desktop",
+      "source": "Bundled",
+      "permissions": ["Client theme token overrides", "Presentation only"],
+      "bundledDir": "desktop-sand-theme",
+      "digest": "aba71c18d8c3e2c11f88855eed7eac7ca350d3de1bf519735a51f0a354512493"
     }
   ]
 }

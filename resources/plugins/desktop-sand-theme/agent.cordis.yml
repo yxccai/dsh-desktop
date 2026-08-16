@@ -1,0 +1,10 @@
+# DSH Desktop Sand Theme preset.
+# The visual contribution is provided by the trusted Desktop client bridge;
+# this lightweight row gives the managed preset a valid session composition.
+- id: persona
+  name: '@deepseek-ai/dsh-persona'
+  config:
+    text: |-
+      Preserve the user's requested behavior and content. The DSH Desktop Sand
+      Theme changes presentation only and must not alter how you answer.
+    includeRuntimeContext: true
