@@ -106,7 +106,9 @@ async function probeProcess(pid, platform = process.platform) {
   } else {
     try {
       const out = execFileSync('ps', ['-p', String(pid), '-o', 'comm='], { encoding: 'utf8', timeout: 3000 });
-      info.image = String(out).trim().toLowerCase();
+      // macOS `comm=` returns a full path; normalize to the basename so the
+      // image matches both the marker's command and the Windows short name.
+      info.image = String(out).trim().toLowerCase().replace(/^.*[\\/]/, '');
     } catch { /* not probeable */ }
     try {
       const out = execFileSync('ps', ['-p', String(pid), '-o', 'args='], { encoding: 'utf8', timeout: 3000 });
