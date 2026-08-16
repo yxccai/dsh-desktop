@@ -10,7 +10,7 @@
     "start": "electron .",
     "dev": "electron .",
     "check": "node --check src/main.js && node --check src/desktop-permissions.js && node --check src/preload.js && node --check src/ipc-guards.js && node --check src/plugin-center-preload.js && node --check src/plugin-center.js && node --check src/plugin-manager.js && node --check src/web-market-manager.js && node --check src/project-panel-manager.js && node --check src/dsh-integration.js && node --check src/runtime-manager.js && node --check src/ownership-marker.js && node --check src/pnpm-runtime.js && node --check src/config.js && node --check src/environment-detector.js && node --check resources/dsh-plugin-center/lib/client.js && node --check resources/market-plugin/lib/host.js && node --check resources/market-plugin/lib/client.js",
-    "test": "node --test --test-concurrency=1 \"test/*.test.js\"",
+    "test": "node --test \"test/*.test.js\"",
     "build": "electron-builder --win nsis portable --publish never",
     "build:win": "electron-builder --win nsis portable --x64 --publish never",
     "build:win:setup": "electron-builder --win nsis --x64 --publish never --config.win.artifactName=DSH-Desktop-Setup-${version}-${os}-${arch}.${ext}",

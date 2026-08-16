@@ -273,14 +273,19 @@ test('waits for and adopts a marked DSH process that is still starting', async (
   const sleeper = spawnSleeper(['--port', String(port)]);
   writeMarker(markerPath, markerFor(url, sleeper.pid));
 
-  let server = null;
-  const timer = setTimeout(() => {
-    server = http.createServer((_request, response) => {
-      response.writeHead(200, { 'content-type': 'text/html' });
-      response.end(DSH_HTML);
-    });
-    server.listen(port, '127.0.0.1');
-  }, 600);
+  // Start the DSH server only after a short delay so the first probes see the
+  // port unreachable and exercise the "still starting" wait. The listen
+  // callback (not a bare setTimeout) gates the ready state.
+  const server = http.createServer((_request, response) => {
+    response.writeHead(200, { 'content-type': 'text/html' });
+    response.end(DSH_HTML);
+  });
+  let listening = false;
+  const serverReady = new Promise((resolve) => {
+    setTimeout(() => {
+      server.listen(port, '127.0.0.1', () => { listening = true; resolve(); });
+    }, 600);
+  });
 
   const { runtime, logs } = makeRuntime(tmp, url, markerPath, async () => ({
     alive: true,
@@ -290,13 +295,14 @@ test('waits for and adopts a marked DSH process that is still starting', async (
 
   try {
     const mode = await runtime.ensureReady();
+    await serverReady;
     assert.equal(mode, 'adopted');
     assert.equal(runtime.adopted.pid, sleeper.pid);
     assert.ok(logs.some((line) => /Waiting for marked DSH process/.test(line)), 'waiting is logged');
     assert.ok(logs.some((line) => /Adopted owned DSH service/.test(line)), 'adoption is logged');
   } finally {
-    clearTimeout(timer);
-    if (server) await new Promise((resolve) => server.close(resolve));
+    if (listening) await new Promise((resolve) => server.close(resolve));
+    else server.close();
     if (runtime.adopted) await runtime.stop();
     sleeper.kill();
     await waitExit(sleeper);
