@@ -81,11 +81,17 @@ function writeIfChanged(file, content, mode) {
  * bundled pnpm is installed. Idempotent: re-running only rewrites files whose
  * content changed (the shim content pins the resolved pnpm path and the
  * runtime executable, so a moved install self-heals on the next launch).
+ *
+ * The shim lives in `$DSH_HOME/bin` (falling back to userData/bin when the
+ * caller does not pass dshHome) so that ANY DSH web process — including one
+ * started manually from a terminal — can resolve the bundled pnpm via the
+ * market host's `$DSH_HOME/bin` fallback, even when the desktop never
+ * injected DSH_MARKET_PNPM_DIR into that process.
  */
 function pnpmShimDir(options) {
   const pnpmCjs = bundledPnpmCjs(options);
   if (!pnpmCjs) return null;
-  const dir = path.join(options.stateRoot, 'bin');
+  const dir = path.join(options.dshHome || options.stateRoot, 'bin');
   fs.mkdirSync(dir, { recursive: true });
   const scripts = shimScripts(pnpmCjs);
   writeIfChanged(path.join(dir, 'pnpm.cmd'), scripts.cmd, 0o600);

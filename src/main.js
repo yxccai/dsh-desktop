@@ -303,6 +303,7 @@ async function start() {
   const pnpmEnv = pnpmRuntimeEnv({
     appPath: app.getAppPath(),
     resourcesPath: process.resourcesPath,
+    dshHome: config.dshHome,
     stateRoot: app.getPath('userData'),
   });
   if (pnpmEnv) {

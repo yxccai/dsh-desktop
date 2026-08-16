@@ -62,12 +62,23 @@ function pnpmNetworkEnv() {
  * the bundled-pnpm PATH shim when the desktop provisioned one. DSH Desktop
  * prepends its shim directory to the PATH of the DSH web process itself, so
  * CLI children normally inherit it; re-prepending DSH_MARKET_PNPM_DIR here
- * covers web processes started outside the desktop (the directory is only
- * added when it is not already leading PATH, keeping the command line short).
+ * covers web processes started outside the desktop. When neither is present,
+ * fall back to the desktop-provisioned shim under `$DSH_HOME/bin` (written by
+ * the shell for exactly this case), so manually-started web processes still
+ * resolve the bundled pnpm. The directory is only prepended when it is not
+ * already leading PATH, keeping the command line short.
  */
 function pnpmEnv() {
   const env = pnpmNetworkEnv()
-  const shim = String(process.env.DSH_MARKET_PNPM_DIR || '').trim()
+  const home = dshHome()
+  let shim = String(process.env.DSH_MARKET_PNPM_DIR || '').trim()
+  if (!shim) {
+    const candidate = join(home, 'bin')
+    const probe = process.platform === 'win32' ? join(candidate, 'pnpm.cmd') : join(candidate, 'pnpm')
+    try {
+      if (existsSync(probe)) shim = candidate
+    } catch {}
+  }
   const current = process.env.PATH || ''
   if (shim && !current.startsWith(shim + delimiter)) {
     env.PATH = current ? shim + delimiter + current : shim
