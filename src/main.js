@@ -6,6 +6,7 @@ const path = require('node:path');
 const { RuntimeManager } = require('./runtime-manager');
 const { configDefaults, loadConfig } = require('./config');
 const { detectEnvironment } = require('./environment-detector');
+const { pnpmRuntimeEnv } = require('./pnpm-runtime');
 const { PluginManager } = require('./plugin-manager');
 const { WebMarketManager } = require('./web-market-manager');
 const { ensureDshIntegration, installBridgePackage } = require('./dsh-integration');
@@ -295,6 +296,22 @@ async function start() {
     env: process.env,
   });
   log(`Environment: globalDsh=${environment.globalDsh} npx=${environment.npx} bundled=${environment.bundled}`);
+  // Bundle pnpm and surface a PATH shim so the dsh CLI (and the market host
+  // inside it) can resolve `pnpm` on machines with no global pnpm — the norm
+  // for npx/global/bundled launches on Windows. RuntimeManager passes the
+  // augmented PATH down to every owned DSH process.
+  const pnpmEnv = pnpmRuntimeEnv({
+    appPath: app.getAppPath(),
+    resourcesPath: process.resourcesPath,
+    stateRoot: app.getPath('userData'),
+  });
+  if (pnpmEnv) {
+    environment.pnpmPath = pnpmEnv.PATH;
+    environment.pnpmDir = pnpmEnv.DSH_MARKET_PNPM_DIR;
+    log(`Bundled pnpm shim ready at ${environment.pnpmDir}`);
+  } else {
+    log('Bundled pnpm not found; market installs will rely on a system pnpm on PATH');
+  }
   runtime = new RuntimeManager(config, log, environment);
   const mode = await runtime.ensureReady();
   log(`Runtime ready (${mode}) at ${config.url}`);

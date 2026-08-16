@@ -15,6 +15,14 @@ In `system-first` auto mode the desktop app uses:
 
 The release contains the complete npm production dependency graph of `@deepseek-ai/dsh` 0.1.0-rc.6. Electron's embedded Node process starts its CLI using `ELECTRON_RUN_AS_NODE=1` and `--expose-internals`. The user does not need a system Node/npm installation.
 
+The release also bundles `pnpm` (a dependency of the desktop shell) and
+provisions a PATH shim at startup (`src/pnpm-runtime.js`): a `pnpm.cmd`/`pnpm`
+that forwards to the bundled `node_modules/pnpm/bin/pnpm.cjs` — under plain
+Node in dev, and under Electron-as-Node in packaged builds. Every owned DSH
+process receives the augmented PATH and `DSH_MARKET_PNPM_DIR`, so the
+community market's `dsh plugin` installs resolve `pnpm` even when nothing
+installed it globally.
+
 The bundled runtime writes only through `DSH_HOME`, npm cache, and normal tool-controlled workspace paths. It is a fallback runtime, not a second copy of user data.
 
 ## Existing computers

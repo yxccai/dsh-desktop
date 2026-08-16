@@ -57,6 +57,39 @@ function pnpmNetworkEnv() {
   }
 }
 
+/**
+ * Environment for every spawned dsh/pnpm child: the pnpm network knobs plus
+ * the bundled-pnpm PATH shim when the desktop provisioned one. DSH Desktop
+ * prepends its shim directory to the PATH of the DSH web process itself, so
+ * CLI children normally inherit it; re-prepending DSH_MARKET_PNPM_DIR here
+ * covers web processes started outside the desktop (the directory is only
+ * added when it is not already leading PATH, keeping the command line short).
+ */
+function pnpmEnv() {
+  const env = pnpmNetworkEnv()
+  const shim = String(process.env.DSH_MARKET_PNPM_DIR || '').trim()
+  const current = process.env.PATH || ''
+  if (shim && !current.startsWith(shim + delimiter)) {
+    env.PATH = current ? shim + delimiter + current : shim
+  }
+  return env
+}
+
+/** Clean, mojibake-free hint when pnpm itself cannot be resolved at all. */
+const PNPM_MISSING_HINT = '未检测到 pnpm 包管理器，无法安装或卸载插件。DSH Desktop 会自动附带内置 pnpm 并把它加入 PATH；若仍提示缺失，请安装 pnpm（如 npm install -g pnpm）后重试，或在环境变量 DSH_MARKET_PNPM_DIR 中指定包含 pnpm.cmd（Windows）或 pnpm（macOS/Linux）的目录后重启 web'
+
+/**
+ * Recognize "pnpm not found" failures even when the bytes arrived as Windows
+ * GBK mojibake: the dsh CLI's own ASCII message, cmd's English message, the
+ * UTF-8 Chinese message when the console code page happens to be UTF-8, and
+ * exit code 9009 (cmd's "command not found"). Used to replace raw output with
+ * the clean hint so a missing pnpm never surfaces as mojibake.
+ */
+function isPnpmMissing(text, exitCode) {
+  if (exitCode === 9009) return true
+  return /pnpm not found on PATH|ENOENT|not recognized as an internal or external command|不是内部或外部命令|'pnpm' 不是/i.test(String(text || ''))
+}
+
 /** Common pnpm/fetch network failures that benefit from a bounded retry and a clear hint. */
 const NETWORK_ERROR_RE = /(?:ETIMEDOUT|EAI_AGAIN|ECONNRESET|ECONNREFUSED|ENOTFOUND|ENETUNREACH|EHOSTUNREACH|EPIPE|ERR_SOCKET|SOCKETTIMEDOUT|getaddrinfo|tunneling socket|fetch failed|network unreachable|Retrying|GET .* error)/i
 
@@ -443,7 +476,28 @@ async function runQueuedOp(op) {
   op.startedAt = Date.now()
   op.status = 'checking'
   runningOp = op
+  op.checkAbort = new AbortController()
   try {
+    // pnpm is a hard prerequisite for every op: `dsh plugin` forwards to the
+    // real `pnpm` binary from PATH. Fail fast with a clean hint when it is
+    // missing — the raw cmd error would otherwise arrive as GBK mojibake on
+    // Windows and burn the whole op timeout before the trial boot even starts.
+    appendOutput(op, '检查 pnpm 环境…\n')
+    const pnpmCheck = await spawnCapture('pnpm', ['--version'], {
+      // cwd must already exist: the profile dir may be absent until the first
+      // `dsh plugin` run initializes it (a missing cwd would false-negative).
+      cwd: process.cwd(),
+      env: pnpmEnv(),
+      timeoutMs: 15000,
+      signal: op.checkAbort.signal,
+      shell: process.platform === 'win32',
+    })
+    if (op.status !== 'checking') return
+    if (!pnpmCheck.ok) {
+      appendOutput(op, PNPM_MISSING_HINT + '\n')
+      settleOp(op, 'failed')
+      return
+    }
     if (op.kind === 'uninstall') {
       // Dispose the live hot mount FIRST, then disable any loader entry under
       // the same name. `dsh plugin remove` only edits the persisted profile —
@@ -454,7 +508,6 @@ async function runQueuedOp(op) {
     }
     if (op.kind === 'install' && op.profile === 'web' && !op.skipCheck) {
       appendOutput(op, '检查来源白名单与试装验证…\n')
-      op.checkAbort = new AbortController()
       const catalog = await loadCatalog()
       if (op.status !== 'checking') return
       const gate = await whitelistSource(op.target, catalog.plugins)
@@ -512,7 +565,7 @@ function spawnOpChild(op) {
     // a TTY (observed on re-add over a pinned git spec); CI forces fail-fast.
     // pnpmNetworkEnv() bounds fetch timeouts/retries so a dead network fails
     // fast instead of retrying until the 120s (or user-configured) op timeout.
-    env: { ...process.env, ...pnpmNetworkEnv() },
+    env: { ...process.env, ...pnpmEnv() },
     shell: op.inv.shell === true,
     stdio: ['ignore', 'pipe', 'pipe'],
   })
@@ -527,6 +580,15 @@ function spawnOpChild(op) {
   child.on('close', async (code) => {
     if (op.status === 'running') {
       const ok = code === 0
+      // A missing pnpm fails every op; replace the raw (possibly GBK-mojibake)
+      // output with the clean hint instead of surfacing garbage. The pre-flight
+      // check normally catches this earlier; this guards races (pnpm removed
+      // mid-op, shim dir wiped) and non-desktop hosts.
+      if (!ok && isPnpmMissing(op.output, code)) {
+        op.output = PNPM_MISSING_HINT + '\n'
+        settleOp(op, 'failed', code)
+        return
+      }
       if (!ok && !op.retried) {
         // pnpm >=11 enforces a 24h minimumReleaseAge supply-chain policy by
         // default; a freshly published package in the lockfile fails every
@@ -678,7 +740,7 @@ async function runProbe(explicitBin, source, signal) {
     }, null, 2) + '\n')
     writeFileSync(join(profileDir, 'cordis.patch.yml'), '[]\n')
     writeFileSync(join(profileDir, 'pnpm-workspace.yaml'), 'packages:\n  - .\n\nnodeLinker: hoisted\nautoInstallPeers: false\n')
-    const env = { ...process.env, ...pnpmNetworkEnv(), DSH_HOME: home }
+    const env = { ...process.env, ...pnpmEnv(), DSH_HOME: home }
 
     // Outer cwd must let execArgv loaders (tsx) resolve from the harness, not
     // from the profile: `dsh plugin` chdirs into the profile itself, and the

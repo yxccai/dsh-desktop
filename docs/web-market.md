@@ -60,22 +60,39 @@ trust. DSH Desktop pins and digest-verifies its own bundled market copy, but
 takes no responsibility for the behavior of plugins installed through the
 market.
 
-## In-web install behavior (upstream Host, as-is)
+## In-web install behavior (upstream Host + DSH Desktop pnpm patches)
 
-The vendored upstream Host half registers `/api/dsh-market` and performs
-community installs by spawning the `dsh plugin` CLI with a source whitelist,
-trial-boot verification, and a FIFO task queue. It is used **as-is, only when
-feasible**: inside the web runtime the CLI is resolved from the process entry,
-`$DSH_BIN`, or PATH. When the desktop launches DSH through npx/bundled runtime
-without `$DSH_BIN`, the panel may report the upstream "CLI not found" hint;
-setting `$DSH_BIN` to a `dsh` CLI entry and restarting enables in-web installs.
-The desktop-side install/enable/disable/uninstall of the market bundle itself
-never depends on the CLI.
+The vendored Host half registers `/api/dsh-market` and performs community
+installs by spawning the `dsh plugin` CLI with a source whitelist, trial-boot
+verification, and a FIFO task queue; its API contract is byte-for-byte
+identical to upstream. On top of that, DSH Desktop adds two portability
+patches to the Host (see `VENDORED.md`):
+
+- **bundled pnpm**: the app bundles `pnpm` as a dependency and materializes a
+  PATH shim (`src/pnpm-runtime.js`) whose `pnpm.cmd`/`pnpm` forwards to the
+  bundled `node_modules/pnpm/bin/pnpm.cjs` — under plain Node in dev and under
+  Electron-as-Node (`ELECTRON_RUN_AS_NODE=1`) in packaged builds. `RuntimeManager`
+  passes the augmented PATH and `DSH_MARKET_PNPM_DIR` to every owned DSH
+  process, and the Host's `pnpmEnv()` re-prepends that directory for the CLI
+  children it spawns, so `dsh plugin`'s pnpm forwarding works even when pnpm
+  was never installed globally (npx/global/bundled launches on Windows).
+- **human-readable pnpm failures**: a fast pre-flight `pnpm --version` check
+  plus a mojibake-safe close handler replace the raw "command not found"
+  output (which arrives as GBK mojibake on Windows) with a clean Chinese hint.
+
+The CLI itself is resolved from the process entry, `$DSH_BIN`, or PATH. When
+the desktop launches DSH through npx/bundled runtime without `$DSH_BIN`, the
+panel may report the upstream "CLI not found" hint; setting `$DSH_BIN` to a
+`dsh` CLI entry and restarting enables in-web installs. The desktop-side
+install/enable/disable/uninstall of the market bundle itself never depends on
+the CLI.
 
 ## Files
 
 - `resources/market-plugin/` — vendored upstream package (see `VENDORED.md`
-  for attribution, pinned tag/commit, and reproduction).
+  for attribution, pinned tag/commit, reproduction, and the two DSH Desktop
+  Host patches).
+- `src/pnpm-runtime.js` — bundled-pnpm PATH shim provisioning.
 - `src/web-market-manager.js` — desktop-side transactional manager.
 - `src/dsh-integration.js` — shared `upsertManagedBlock` / `stripManagedBlock`
   patch helpers.

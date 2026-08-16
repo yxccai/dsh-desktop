@@ -41,7 +41,7 @@ const REQUIRED_FILES = [
   'cordis.patch.yml',
 ];
 /** Fixed digest of the vendored `resources/market-plugin` tree. */
-const VENDORED_DIGEST = '264feddeb7179c42f1675af0163012764ab3c90f613a18e8c7f396c2e6c4a512';
+const VENDORED_DIGEST = '2ea80b1c9dfc5c28a45c3108a95a0444da9ba1ecb0b22536b16dd2516cea182c';
 
 function readJson(file, fallback) {
   try { return JSON.parse(fs.readFileSync(file, 'utf8')); }

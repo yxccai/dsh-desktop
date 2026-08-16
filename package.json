@@ -9,7 +9,7 @@
   "scripts": {
     "start": "electron .",
     "dev": "electron .",
-    "check": "node --check src/main.js && node --check src/desktop-permissions.js && node --check src/preload.js && node --check src/ipc-guards.js && node --check src/plugin-center-preload.js && node --check src/plugin-center.js && node --check src/plugin-manager.js && node --check src/web-market-manager.js && node --check src/project-panel-manager.js && node --check src/dsh-integration.js && node --check src/runtime-manager.js && node --check src/config.js && node --check src/environment-detector.js && node --check resources/dsh-plugin-center/lib/client.js && node --check resources/market-plugin/lib/host.js && node --check resources/market-plugin/lib/client.js",
+    "check": "node --check src/main.js && node --check src/desktop-permissions.js && node --check src/preload.js && node --check src/ipc-guards.js && node --check src/plugin-center-preload.js && node --check src/plugin-center.js && node --check src/plugin-manager.js && node --check src/web-market-manager.js && node --check src/project-panel-manager.js && node --check src/dsh-integration.js && node --check src/runtime-manager.js && node --check src/pnpm-runtime.js && node --check src/config.js && node --check src/environment-detector.js && node --check resources/dsh-plugin-center/lib/client.js && node --check resources/market-plugin/lib/host.js && node --check resources/market-plugin/lib/client.js",
     "test": "node --test \"test/*.test.js\"",
     "build": "electron-builder --win nsis portable",
     "build:win": "electron-builder --win nsis portable --x64",
@@ -21,7 +21,8 @@
   },
   "dependencies": {
     "@deepseek-ai/dsh": "0.1.0-rc.6",
-    "@yxccai/dsh-desktop-plugin-center": "file:resources/dsh-plugin-center"
+    "@yxccai/dsh-desktop-plugin-center": "file:resources/dsh-plugin-center",
+    "pnpm": "^10.12.0"
   },
   "devDependencies": {
     "electron": "^39.0.0",

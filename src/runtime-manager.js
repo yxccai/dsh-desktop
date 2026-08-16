@@ -70,6 +70,31 @@ function spawnSpec(spec, options, platform = process.platform) {
 
 function delay(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
 
+/**
+ * Environment for one owned DSH child. Always pins DSH_HOME and the npm
+ * cache; when the desktop provisioned the bundled-pnpm shim (see
+ * src/pnpm-runtime.js), the augmented PATH leads with the shim directory so
+ * the dsh CLI can resolve `pnpm` even when nothing installed it globally
+ * (npx/global/bundled launches). DSH_MARKET_PNPM_DIR lets the market host
+ * re-prepend the same directory for the CLI children it spawns inside the
+ * web process.
+ * @param {object} config - the resolved desktop config.
+ * @param {object} environment - the detected launch environment (may carry
+ * pnpmPath/pnpmDir set by main.js).
+ * @param {object} [extra] - per-spec env overrides (e.g. ELECTRON_RUN_AS_NODE).
+ */
+function buildChildEnv(config, environment, extra = {}) {
+  const env = {
+    ...process.env,
+    ...extra,
+    DSH_HOME: config.dshHome,
+    npm_config_cache: config.npmCache,
+  };
+  if (environment && environment.pnpmPath) env.PATH = environment.pnpmPath;
+  if (environment && environment.pnpmDir) env.DSH_MARKET_PNPM_DIR = environment.pnpmDir;
+  return env;
+}
+
 class RuntimeManager {
   constructor(config, log, environment = {}) {
     this.config = config;
@@ -80,12 +105,7 @@ class RuntimeManager {
   }
 
   async startOne(spec) {
-    const env = {
-      ...process.env,
-      ...(spec.env || {}),
-      DSH_HOME: this.config.dshHome,
-      npm_config_cache: this.config.npmCache,
-    };
+    const env = buildChildEnv(this.config, this.environment, spec.env || {});
     return new Promise((resolve, reject) => {
       this.log(`Starting ${spec.label}: ${spec.command} ${spec.args.join(' ')}`);
       const child = spawnSpec(spec, {
@@ -191,4 +211,4 @@ class RuntimeManager {
   }
 }
 
-module.exports = { inspectService, launchCandidates, quoteCmdArg, spawnSpec, RuntimeManager };
+module.exports = { inspectService, launchCandidates, quoteCmdArg, spawnSpec, buildChildEnv, RuntimeManager };

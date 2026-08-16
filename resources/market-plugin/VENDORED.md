@@ -13,12 +13,22 @@ DSH Desktop as an optional managed Web Profile plugin.
 
 ## What is vendored — and how it was changed
 
-The **Host half is based on upstream**: `lib/host.js` is copied byte-for-byte
-from the fixed tag and used as-is. It registers the `/api/dsh-market` route
-(catalog listing with offline snapshot fallback, install/uninstall/update FIFO
-queue via the `dsh plugin` CLI, whitelist + trial-boot checks,
-disable/enable persistence, op queue/kill). The API contract the browser talks
-to is therefore identical to upstream.
+The **Host half is based on upstream**: `lib/host.js` is copied from the fixed
+tag and kept API-compatible with it — the `/api/dsh-market` route, the catalog
+listing with offline snapshot fallback, the install/uninstall/update FIFO
+queue via the `dsh plugin` CLI, the whitelist + trial-boot checks,
+disable/enable persistence, and the op queue/kill contract are all
+byte-for-byte identical to upstream. On top of that, DSH Desktop adds two
+small portability patches to the Host:
+
+- a **bundled-pnpm PATH shim fallback**: `pnpmEnv()` re-prepends the
+  `DSH_MARKET_PNPM_DIR` shim directory (created by the desktop, see
+  `src/pnpm-runtime.js`) to the PATH of every spawned dsh/pnpm child, so
+  `dsh plugin` can resolve `pnpm` even when nothing installed it globally on
+  Windows; and
+- a **human-readable pnpm-missing failure**: a fast pre-flight pnpm check plus
+  a mojibake-safe close handler replace the raw "command not found" output
+  (which arrives as GBK mojibake on Windows) with a clean Chinese hint.
 
 The **Client half is independently redesigned**: `lib/client.js` is modified
 from the upstream client under the MIT license. Its user interface and CSS
@@ -36,9 +46,11 @@ contract; only the presentation layer was replaced.
 The following files are unmodified upstream copies:
 
 - `package.json`, `cordis.patch.yml`, `README.md`, `LICENSE`
-- `lib/host.js` — Host half (byte-for-byte)
 - `data/catalog-snapshot.json` — offline catalog snapshot used when the
   awesome-dsh-plugin.com JSON API is unreachable
+
+`lib/host.js` is upstream with the two DSH Desktop portability patches listed
+above; everything else in the Host's API contract is unchanged.
 
 Upstream `scripts/`, `tests/`, and `img/` are development artifacts excluded
 from the published package and are intentionally not vendored.
@@ -68,7 +80,11 @@ DSH web service is required for changes to take effect. The upstream Host's
 install behavior (spawning the `dsh plugin` CLI inside the web process) is used
 as-is only when the running web runtime can resolve a `dsh` CLI (`$DSH_BIN` or
 PATH); the desktop shell itself never needs it, because it mounts the bundle
-directly.
+directly. For in-web installs, DSH Desktop additionally provisions the bundled
+pnpm via a PATH shim (`src/pnpm-runtime.js`) and passes the augmented PATH and
+`DSH_MARKET_PNPM_DIR` to the DSH process it launches, so `dsh plugin`'s pnpm
+forwarding works under npx/global/bundled launches even when pnpm was never
+installed globally.
 
 ## Verify
 
@@ -76,6 +92,7 @@ Reproduce the upstream portions of this copy at any time:
 
 ```powershell
 git clone --depth 1 --branch v0.5.2 https://github.com/Sanqi-normal/dsh-webui-market-plugin.git $tmp
-# copy package.json cordis.patch.yml README.md LICENSE lib/host.js data/ into resources/market-plugin
+# copy package.json cordis.patch.yml README.md LICENSE data/ into resources/market-plugin
 # lib/client.js in this directory is the DSH Desktop redesign (MIT), not the upstream file
+# lib/host.js is upstream plus the DSH Desktop pnpm portability patches described above
 ```
