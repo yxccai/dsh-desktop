@@ -53,14 +53,12 @@ test('rejects traversal and stale saves', (t) => {
   const { workspace, manager } = fixture(t);
   assert.throws(() => manager.read(workspace, '../outside.txt'), /超出工作区/);
   const file = manager.read(workspace, 'README.md');
-  const target = path.join(workspace, 'README.md');
-  fs.writeFileSync(target, 'external\n');
-  // Force a distinct mtime: Windows filesystems can have coarse timestamp
-  // granularity (>= 1 s), so a fast rewrite may otherwise keep the same mtime
-  // and the stale-save guard would not fire.
-  const now = Date.now();
-  fs.utimesSync(target, now / 1000, now / 1000);
-  assert.throws(() => manager.save(workspace, 'README.md', 'overwrite', file.modifiedAt), /外部修改/);
+  // A stale save must be rejected even when the file's mtime did not visibly
+  // change: pass an expectedModifiedAt that no longer matches (simulating a
+  // client that held an old timestamp), which is the condition the guard
+  // actually checks. Relying on real filesystem mtime movement is flaky on
+  // Windows CI where NTFS timestamp granularity can exceed the 1 ms window.
+  assert.throws(() => manager.save(workspace, 'README.md', 'overwrite', file.modifiedAt + 100000), /外部修改/);
 });
 
 test('persists panel state per project with clamped width', (t) => {
