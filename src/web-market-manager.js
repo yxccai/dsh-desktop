@@ -53,7 +53,7 @@ const TEXT_BASENAMES = new Set([
 ]);
 
 /** Fixed digest of the vendored `resources/market-plugin` tree. */
-const VENDORED_DIGEST = '6cd4f4a63f0fc681c0a0b0cad5e1853b40b1fce2480efc754eded5259611c42e';
+const VENDORED_DIGEST = 'af0d8ff142617d21168180278d02b35b1679695273d445c75176fd9e93e513fc';
 
 function readJson(file, fallback) {
   try { return JSON.parse(fs.readFileSync(file, 'utf8')); }

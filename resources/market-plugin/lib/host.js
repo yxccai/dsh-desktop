@@ -16,7 +16,7 @@
 // never reaches that line, so the probe refuses it with the real boot error,
 // and the real profile has never been touched. Static manifest heuristics are
 // gone: only the boot verdict decides installability.
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { homedir, tmpdir } from 'node:os'
 import { delimiter, dirname, join, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
@@ -642,6 +642,20 @@ function spawnOpChild(op) {
         return
       }
       if (!ok && !op.retried) {
+        // pnpm >=10.3x rejects bare GitHub archive URL lockfile entries that
+        // lack integrity (written by older pnpm / edited manifests). Heal the
+        // profile manifest by rewriting them to `github:` specs and retry once.
+        if (isTarballIntegrityFailure(op.output)) {
+          const healed = healTarballIntegrity(op.profile)
+          if (healed.length > 0) {
+            op.retried = true
+            appendOutput(op, '\n[auto] 检测到锁文件缺少 tarball 完整性校验（旧版 pnpm 安装的 GitHub URL 依赖），已将 '
+              + healed.join(', ') + ' 改写为 github: 语法并自动重试…\n')
+            clearTimeout(op.timer)
+            spawnOpChild(op)
+            return
+          }
+        }
         // pnpm >=11 enforces a 24h minimumReleaseAge supply-chain policy by
         // default; a freshly published package in the lockfile fails every
         // op. Heal the profile's exclude list and retry the same command
@@ -1175,7 +1189,11 @@ function readProfileDeps(profile) {
 
 function readProfileManifest(profile) {
   try {
-    return JSON.parse(readFileSync(profileDir(profile) + '/package.json', 'utf8'))
+    // Strip a UTF-8 BOM if present: the desktop or an editor may have written
+    // one, and JSON.parse rejects "\uFEFF{".
+    let text = readFileSync(profileDir(profile) + '/package.json', 'utf8')
+    if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1)
+    return JSON.parse(text)
   } catch { return null }
 }
 
@@ -1263,6 +1281,53 @@ function forgetDisabledName(profile, name) {
     json.dsh = { ...json.dsh, market: { ...market, disabled: next } }
     writeFileSync(file, JSON.stringify(json, null, 2) + '\n')
   } catch {}
+}
+
+// ── lockfile integrity auto-heal ─────────────────────────────────────────────
+// pnpm >=10.3x refuses lockfile entries for bare GitHub archive URLs that lack
+// an "integrity" field (ERR_PNPM_MISSING_TARBALL_INTEGRITY): such entries are
+// written by older pnpm versions (or hand-edited package.json) and make every
+// later install/uninstall op fail. The fix is to rewrite the dependency
+// specifier from a bare archive URL to the `github:` shorthand, which pnpm
+// resolves through its git path and records WITH integrity.
+
+/** Convert "https://github.com/owner/repo/archive/refs/tags/v1.2.3.tar.gz". */
+function githubArchiveToSpec(url) {
+  const m = String(url || '').match(/^https:\/\/github\.com\/([^/]+)\/([^/]+)\/archive\/refs\/tags\/([^/]+)\.tar\.gz$/i)
+  if (!m) return null
+  return 'github:' + m[1] + '/' + m[2] + '#' + m[3]
+}
+
+/**
+ * Scan the profile manifest for bare GitHub archive URL dependencies and
+ * rewrite them to `github:` specs (no BOM, atomic write). Returns the list of
+ * rewritten package names, or [] when nothing needed fixing.
+ */
+function healTarballIntegrity(profile) {
+  const file = profileDir(profile) + '/package.json'
+  const json = readProfileManifest(profile)
+  if (!json || !json.dependencies || typeof json.dependencies !== 'object') return []
+  const rewritten = []
+  const deps = { ...json.dependencies }
+  for (const [name, spec] of Object.entries(deps)) {
+    const fixed = githubArchiveToSpec(spec)
+    if (fixed && fixed !== spec) {
+      deps[name] = fixed
+      rewritten.push(name)
+    }
+  }
+  if (rewritten.length === 0) return []
+  json.dependencies = deps
+  const temp = file + '.heal-' + process.pid + '-' + Date.now()
+  writeFileSync(temp, JSON.stringify(json, null, 2) + '\n') // UTF-8 without BOM
+  renameSync(temp, file)
+  updatesCache = { ...updatesCache, [profile]: null }
+  return rewritten
+}
+
+/** True when the op output shows the missing-integrity failure. */
+function isTarballIntegrityFailure(text) {
+  return /ERR_PNPM_MISSING_TARBALL_INTEGRITY/.test(String(text || ''))
 }
 
 // ── external (out-of-catalog) installed plugin inventory ─────────────────────
@@ -1483,7 +1548,7 @@ function updateTargetFor(spec, name, latest) {
 const UPDATES_TTL_MS = 10 * 60 * 1000
 let updatesCache = {}
 
-export { classifyPlugin, runProbe, whitelistSource, loadCatalog, parseSimplePatch, checkUpdates, registryToCatalog, setDisabledState, installedAll, githubIdentity, matchesCatalog, resolveDepIdentityFrom, resolveDepIdentity, healReleaseAgeExclude, githubBase, updateTargetFor } // test hooks; cordis only reads name/inject/apply
+export { classifyPlugin, runProbe, whitelistSource, loadCatalog, parseSimplePatch, checkUpdates, registryToCatalog, setDisabledState, installedAll, githubIdentity, matchesCatalog, resolveDepIdentityFrom, resolveDepIdentity, githubArchiveToSpec, healReleaseAgeExclude, healTarballIntegrity, isTarballIntegrityFailure, githubBase, updateTargetFor } // test hooks; cordis only reads name/inject/apply
 
 export function apply(ctx) {
   const webServer = ctx.get('webServer')
