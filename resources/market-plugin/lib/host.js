@@ -54,6 +54,11 @@ function pnpmNetworkEnv() {
     npm_config_fetch_retries: process.env.DSH_MARKET_FETCH_RETRIES || '1',
     npm_config_fetch_retry_mintimeout: process.env.DSH_MARKET_FETCH_RETRY_MINTIMEOUT_MS || '1000',
     npm_config_fetch_retry_maxtimeout: process.env.DSH_MARKET_FETCH_RETRY_MAXTIMEOUT_MS || '10000',
+    // pnpm >=10 refuses git-hosted deps whose build scripts are not in an
+    // allowlist (ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED). Installing a community
+    // plugin already means trusting and executing its code, so the market
+    // opts out of that extra gate; the whitelist + trial-boot checks remain.
+    npm_config_dangerously_allow_all_builds: 'true',
   }
 }
 
@@ -83,6 +88,42 @@ function pnpmEnv() {
   if (shim && !current.startsWith(shim + delimiter)) {
     env.PATH = current ? shim + delimiter + current : shim
   }
+  return env
+}
+
+/**
+ * The pnpm store a profile's node_modules is currently linked from, read from
+ * its `node_modules/.modules.yaml` (storeDir). When a profile was created by a
+ * different pnpm install (different DSH_HOME / store), re-running pnpm with
+ * the default store fails with ERR_PNPM_UNEXPECTED_STORE; pinning the same
+ * store keeps the existing node_modules valid. The recorded path includes the
+ * store version segment (e.g. .../.pnpm-store/v10); pnpm appends that segment
+ * itself, so it is stripped before passing store-dir back.
+ * @returns {string|null} the store root dir recorded by the profile, or null.
+ */
+function profileStoreDir(profile) {
+  try {
+    const yaml = readFileSync(join(profileDir(profile), 'node_modules', '.modules.yaml'), 'utf8')
+    const match = yaml.match(/^\s*"?storeDir"?\s*:\s*"?([^"\n]+)"?\s*,?\s*$/m)
+    if (match) {
+      // YAML double-quoted strings escape each backslash as "\\"; decode them
+      // to single separators, drop a trailing store-version segment (pnpm
+      // appends it itself), and strip any leftover slashes.
+      return match[1].replace(/\\\\/g, '/').replace(/\\/g, '/').replace(/\/+$/, '').replace(/\/v\d+$/, '')
+    }
+  } catch {}
+  return null
+}
+
+/**
+ * pnpm environment for a specific profile op: pnpmEnv() plus, when the
+ * profile already has a linked store, npm_config_store_dir pinned to it so
+ * ERR_PNPM_UNEXPECTED_STORE cannot abort the op.
+ */
+function pnpmEnvFor(profile) {
+  const env = pnpmEnv()
+  const store = profileStoreDir(profile)
+  if (store && !env.npm_config_store_dir) env.npm_config_store_dir = store
   return env
 }
 
@@ -498,7 +539,7 @@ async function runQueuedOp(op) {
       // cwd must already exist: the profile dir may be absent until the first
       // `dsh plugin` run initializes it (a missing cwd would false-negative).
       cwd: process.cwd(),
-      env: pnpmEnv(),
+      env: pnpmEnvFor(op.profile),
       timeoutMs: 15000,
       signal: op.checkAbort.signal,
       shell: process.platform === 'win32',
@@ -576,7 +617,7 @@ function spawnOpChild(op) {
     // a TTY (observed on re-add over a pinned git spec); CI forces fail-fast.
     // pnpmNetworkEnv() bounds fetch timeouts/retries so a dead network fails
     // fast instead of retrying until the 120s (or user-configured) op timeout.
-    env: { ...process.env, ...pnpmEnv() },
+    env: { ...process.env, ...pnpmEnvFor(op.profile) },
     shell: op.inv.shell === true,
     stdio: ['ignore', 'pipe', 'pipe'],
   })
