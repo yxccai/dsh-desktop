@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.0 - Project Panel, Themes, Plugin Center, and Community Market
+
+- Add the conversation-aware **project panel**: files actually modified or produced by each reply appear below the response; click to open multi-tab previews (Markdown/HTML/code/Diff/CSV/PDF/images/text) with split editing and conflict-aware atomic saves. Git workspaces get real status/diff/single-file discard; non-Git directories use content-blob snapshots stored outside the project (no `git init`, no metadata written into the workspace). Every reply records a recoverable snapshot with an automatic pre-restore checkpoint; per-file undo and full-context diffs are supported in both modes.
+- Add managed **built-in plugins**: four color themes (Ocean blue, Aurora green/violet, Rose sunset pink, Sand warm amber) with light/dark token overrides and reversible gradient backgrounds; a custom image background with native picker, opacity control, and enable/disable; and the Desktop Writing assistant preset — all install/enable/disable/uninstall transactionally with digest verification.
+- Add the optional **community plugin market**: a fixed, vendored MIT copy of `@sanqi-normal/dsh-webui-market-plugin` mounts into the shared `DSH_HOME` on demand, adding a Settings → Plugins → Plugin Market tab that browses awesome-dsh-plugin.com and installs/uninstalls community plugins into the shared web profile (browser Web and DSH Desktop share the same installs). The desktop shell bundles pnpm (PATH shim, Electron-as-Node), pins the profile pnpm store, allows git-hosted build scripts, and auto-heals lockfiles missing tarball integrity — so installs work without any global pnpm or manual fixes.
+- Harden the shell: ownership markers persist across restarts so an owned DSH service is adopted and stopped correctly even after the desktop was force-killed; IPC sender guards accept only the plugin-center window and the exact trusted DSH origin; clipboard writes are allowed only from the identity-verified loopback page; renderer stays sandboxed with contextIsolation and loopback-only navigation.
+- Rebrand the settings bridge to 内置插件 (Built-in Plugins) with a managed market card; redesigned the market client UI into an original command-center layout (`.wmp-*`) while keeping the upstream host API contract; all market operations are transactional with rollback, conflict refusal, and digest pinning.
+
 ## Unreleased
 
 - Make the vendored market Host resolve the bundled pnpm for DSH services started outside the desktop too: the pnpm shim is now written under `$DSH_HOME/bin` and the Host's `pnpmEnv()` falls back to that directory when `DSH_MARKET_PNPM_DIR` is absent, so manually-started `dsh web` processes find the bundled pnpm without any env injection.

@@ -1,6 +1,6 @@
 {
   "name": "dsh-desktop-shell",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Unofficial cross-platform desktop shell with a bundled fallback runtime for DeepSeek Harness Web.",
   "author": "DSH Desktop contributors",
   "license": "MIT",

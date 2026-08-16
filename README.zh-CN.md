@@ -8,25 +8,44 @@
 
 一个基于 DeepSeek Harness 的非官方开源桌面端，提供更简单、直观的桌面使用体验。
 
-## 项目优势
+## 三大核心优势
 
-- **一键使用**：Windows 安装后即可启动，无需手动配置命令行。
-- **自带运行环境**：没有 Node.js、npm、npx 或 DSH 也能运行。
-- **自动继承**：如果电脑已有 DSH，会优先复用原来的数据、配置、会话和兼容插件。
-- **完整 Web 功能**：直接使用原始 DSH Web，尽可能保持功能和插件兼容性。
-- **安全隔离**：网页不直接获得 Node.js、文件系统或任意命令执行权限。
-- **插件中心**：安装、启用、停用和管理推荐的 Agent Preset，不覆盖已有用户内容。
-- **Web 插件市场**：可选地把内置的社区插件市场（`@sanqi-normal/dsh-webui-market-plugin`，MIT 固定版本）挂载到共享的 `DSH_HOME`，让 Web 界面获得「设置 → 插件 → 插件市场」入口；插件中心内以事务方式管理，不修改 `profiles/web`。详见 [docs/web-market.md](docs/web-market.md)。
-- **项目面板**：在聊天右侧浏览和搜索文件、多标签预览与编辑；Git 项目和普通非 Git 目录都支持对话变更、Diff、撤销和恢复项目快照。
-- **持续扩展**：后续将完善首次启动向导、自动更新、更多桌面功能和跨平台支持。
+### 一、真正的官方 Web 外壳——安全、完整、可持续
+
+DSH Desktop 不是重新实现的桌面端，而是把官方 DSH Web 完整装进原生窗口。这一个决定带来三重价值：
+
+- **功能完全一致**：直接继承官方 Web 的全部功能、插件、会话和工作区数据。不存在"桌面版缺功能"的问题，因为桌面端本身就是官方 Web。
+- **结构安全隔离**：网页永远不直接获得 Node.js、文件系统或任意命令权限。通过 Electron 沙箱 + contextIsolation + 精确的 loopback 来源导航限制 + 白名单 IPC 实现。安全是架构的一部分，不是后来打补丁。
+- **升级零重写**：官方 DSH 发布新版本时，桌面端只需改版本号重新打包——零自定义代码重写、零 API 不兼容。已有的 `DSH_HOME`、会话、Agent Preset 和持久化插件全部自动保留。
+
+### 二、基础版保持简洁——只加两项真正有用的桌面增强
+
+不塞满半用不上的功能，保留官方 Web 的简洁体验，只在桌面场景补上最常被需要的两项：
+
+- **项目面板**（对话右侧，与聊天并排）：每轮回复自动列出本次实际修改或生成的文件。多标签预览支持 Markdown、HTML、代码、Diff、CSV、PDF、图片和文本，可分屏编辑并进行带冲突检测的原子保存。Git 工作区显示真实状态、Diff 和单文件撤销；非 Git 目录则使用内容 Blob 快照（不执行 `git init`、不污染项目目录）。每次回复自动记录可恢复的快照，恢复前会自动保存当前状态为恢复点。
+- **内置插件**（开箱即用的官方精选能力）：多套配色主题（深海渐变蓝、极光绿紫、玫瑰落日粉、暖沙琥珀，支持明暗切换）、自定义图片背景（原生文件选择、透明度调节、随时停用），以及轻量桌面写作助手（写作、改写、总结、翻译 Agent）。没有堆砌多余功能，只把最常用、最值得做成桌面增强的内容做好。
+
+### 三、可扩展、可创造——简洁的底座，够高的天花板
+
+基础版轻量，但扩展能力直接可用：
+
+- **内置插件持续上新**：官方精选插件以事务式方式交付，带 Digest 校验，可安装、停用、卸载，不覆盖用户内容，也不污染 `profiles/web`。
+- **社区插件市场直接可用**：内置固定版本的 MIT 市场组件（`@sanqi-normal/dsh-webui-market-plugin`），挂载到共享的 `DSH_HOME` 后，Web 界面即可获得「设置 → 插件 → 插件市场」入口，浏览 [awesome-dsh-plugin.com](https://awesome-dsh-plugin.com/) 的数百个社区插件，一键安装、更新、卸载。应用内置 `pnpm`，无需全局安装。桌面端和浏览器版共享同一 `DSH_HOME`，两边安装的插件互通生效。
+- **一句话总结**：今天简洁好用，明天随官方插件生态、社区市场和持续更新的内置插件一起成长。
 
 ## 下载
 
-请从 [GitHub Releases](https://github.com/yxccai/dsh-desktop/releases) 下载。
+请从 [GitHub Releases](https://github.com/yxccai/dsh-desktop/releases/tag/v0.5.0) 下载：
 
-- [Windows x64 安装版](https://github.com/yxccai/dsh-desktop/releases/download/v0.4.0/DSH-Desktop-Setup-0.4.0-win-x64.exe)
-- [Windows x64 便携版](https://github.com/yxccai/dsh-desktop/releases/download/v0.4.0/DSH-Desktop-Portable-0.4.0-win-x64.exe)
-- [SHA-256 校验文件](https://github.com/yxccai/dsh-desktop/releases/download/v0.4.0/SHA256SUMS-0.4.0.txt)
+- [Windows x64 安装版](https://github.com/yxccai/dsh-desktop/releases/download/v0.5.0/DSH-Desktop-Setup-0.5.0-win-x64.exe)
+- [Windows x64 便携版](https://github.com/yxccai/dsh-desktop/releases/download/v0.5.0/DSH-Desktop-Portable-0.5.0-win-x64.exe)
+- [SHA-256 校验文件](https://github.com/yxccai/dsh-desktop/releases/download/v0.5.0/SHA256SUMS-0.5.0.txt)
+
+### macOS 测试版
+
+- [macOS 预发布版（Intel / Apple Silicon）](https://github.com/yxccai/dsh-desktop/releases/tag/v0.5.0)
+
+首次启动时，请在 Finder 中按住 Control 点击应用并选择「打开」；若 macOS 仍阻止运行，请前往「系统设置 → 隐私与安全性 → 仍要打开」。正式签名与公证将在后续版本加入。
 
 ## 界面截图
 

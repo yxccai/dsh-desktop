@@ -10,23 +10,44 @@ An unofficial open-source desktop app for [DeepSeek Harness](https://github.com/
 
 ## Highlights
 
-- **One-click setup**: Install and launch on Windows without manual command-line setup.
-- **Bundled runtime**: Works even when Node.js, npm, npx, and DSH are not installed.
-- **Automatic reuse**: Prefers existing DSH data, settings, sessions, and compatible plugins.
-- **Full Web experience**: Uses the original DSH Web UI for maximum feature and plugin compatibility.
-- **Secure isolation**: The Web page receives no direct Node.js, filesystem, or arbitrary command access.
-- **Plugin Center**: Install, enable, disable, and manage recommended Agent Presets without overwriting existing user content.
-- **Web Plugin Market**: Optionally mount the bundled community plugin market (`@sanqi-normal/dsh-webui-market-plugin`, vendored MIT) into the shared `DSH_HOME` so the Web GUI gains a Settings → Plugins → Plugin Market tab — managed transactionally from the Plugin Center without touching `profiles/web`. See [docs/web-market.md](docs/web-market.md).
-- **Project panel**: Browse and search files, open multi-tab previews, edit and save text, inspect real Git changes, and recover project snapshots beside the conversation.
-- **Built to grow**: Setup guidance, updates, more desktop features, and broader platform support are planned.
+### A true shell of the official DSH Web — safe, complete, and future-proof
+
+DSH Desktop is not a separate implementation — it is the official DSH Web wrapped in a native desktop window. That single design choice gives it three concrete strengths:
+
+- **Full feature parity**: It inherits every capability, plugin, session, and workspace setting from the official Web UI. There is no "desktop version is missing something" gap, because the desktop is the Web.
+- **Safe isolation by construction**: The web page never receives direct Node.js, filesystem, or arbitrary command access. The desktop enforces Electron sandbox + context isolation + precise loopback-only navigation origins + a whitelisted IPC layer. Security is structural, not added later.
+- **Upgrades stay simple**: When the official DSH releases a new version, the desktop updates with a version-number change and rebuilt bundle — zero rewrites, zero broken custom code. Existing `DSH_HOME`, sessions, Agent Presets, and persistent plugins carry over unchanged.
+
+### Foundation stays lean — only two real desktop enhancements
+
+Instead of stuffing the app with half-used features, DSH Desktop keeps the official Web experience clean and adds exactly two things that matter at a desk:
+
+- **Project panel** (conversation-aware, beside the chat): Every turn shows the files actually modified or produced. Multi-tab previews cover Markdown, HTML, source code, diff, CSV, PDF, images, and plain text — with split editing and conflict-aware atomic saves. Git workspaces show real status, diff, and per-file discard; non-Git directories use content-blob snapshots (no `git init`, no pollution). Each reply records a recoverable snapshot; restoring always saves the current state as a recovery point first.
+- **Built-in plugins** (ready out of the box): Official curated capabilities — multiple color themes (Deep Ocean Blue gradient, Aurora Green-Purple, Rose Sunset Pink, Warm Sand Amber; light and dark modes), custom image backgrounds with native picker, transparency control, and instant disable, plus a lightweight desktop writing assistant (drafting, rewriting, summarizing, translating Agent). Nothing extra crowds the experience; these are the features people actually reach for.
+
+### Extensible and creative — a high ceiling from day one
+
+The foundation is minimal; the ceiling is high:
+
+- **Built-in plugins keep growing**: New official curated plugins are delivered as transactionally managed updates with digest verification. They can be installed, disabled, or uninstalled without touching your user content or profiles.
+- **Community plugin market inside the app**: A fixed, digest-verified copy of the MIT-licensed market component mounts into your shared `DSH_HOME`. Once mounted, the Web GUI gains a **Settings → Plugins → Plugin Market** tab that browses awesome-dsh-plugin.com — browse, install, update, and uninstall community plugins in one click. The app bundles its own `pnpm`, so nothing needs to be installed globally. Because the desktop and the browser version share the same `DSH_HOME`, plugins installed from either side work in both.
+- **Shared data, shared growth**: Sessions, Agent Presets, persistent plugins, workspace settings — everything lives in one place. The desktop enhances it; it never replaces or fragments it.
+
+In short: clean today, expandable tomorrow — official plugin ecosystem, community market, and continuously updated built-in plugins all work out of the box.
 
 ## Download
 
-Download from [GitHub Releases](https://github.com/yxccai/dsh-desktop/releases):
+Download from [GitHub Releases](https://github.com/yxccai/dsh-desktop/releases/tag/v0.5.0):
 
-- [Windows x64 Setup](https://github.com/yxccai/dsh-desktop/releases/download/v0.4.0/DSH-Desktop-Setup-0.4.0-win-x64.exe)
-- [Windows x64 Portable](https://github.com/yxccai/dsh-desktop/releases/download/v0.4.0/DSH-Desktop-Portable-0.4.0-win-x64.exe)
-- [SHA-256 checksums](https://github.com/yxccai/dsh-desktop/releases/download/v0.4.0/SHA256SUMS-0.4.0.txt)
+- [Windows x64 Setup](https://github.com/yxccai/dsh-desktop/releases/download/v0.5.0/DSH-Desktop-Setup-0.5.0-win-x64.exe)
+- [Windows x64 Portable](https://github.com/yxccai/dsh-desktop/releases/download/v0.5.0/DSH-Desktop-Portable-0.5.0-win-x64.exe)
+- [SHA-256 checksums](https://github.com/yxccai/dsh-desktop/releases/download/v0.5.0/SHA256SUMS-0.5.0.txt)
+
+### macOS (test build)
+
+- [macOS prerelease (Intel / Apple Silicon)](https://github.com/yxccai/dsh-desktop/releases/tag/v0.5.0)
+
+On first launch, Control-click the app in Finder and choose **Open**. If macOS still blocks it, go to **System Settings → Privacy & Security → Open Anyway**. Signing and notarization are planned for a future release.
 
 ## Screenshots
 
