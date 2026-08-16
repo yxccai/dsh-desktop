@@ -251,7 +251,7 @@ function createTray() {
 async function requestQuit(stopOwned) {
   if (quitting) return;
   quitting = true;
-  log(`Desktop exit requested; stopOwned=${stopOwned}`);
+  log(`Desktop exit requested; stopOwned=${stopOwned}${runtime?.adopted ? `; adopted DSH pid ${runtime.adopted.pid}` : ''}`);
   try { if (stopOwned) await runtime?.stop(); }
   catch (error) { log(`Failed to stop DSH: ${error.message}`); }
   // Destroy hidden UI resources before a hard app exit so portable builds do
@@ -312,7 +312,7 @@ async function start() {
   } else {
     log('Bundled pnpm not found; market installs will rely on a system pnpm on PATH');
   }
-  runtime = new RuntimeManager(config, log, environment);
+  runtime = new RuntimeManager(config, log, environment, { markerPath: userFile('dsh-ownership.json') });
   const mode = await runtime.ensureReady();
   log(`Runtime ready (${mode}) at ${config.url}`);
   createWindow();
