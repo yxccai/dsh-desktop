@@ -53,7 +53,13 @@ test('rejects traversal and stale saves', (t) => {
   const { workspace, manager } = fixture(t);
   assert.throws(() => manager.read(workspace, '../outside.txt'), /超出工作区/);
   const file = manager.read(workspace, 'README.md');
-  fs.writeFileSync(path.join(workspace, 'README.md'), 'external\n');
+  const target = path.join(workspace, 'README.md');
+  fs.writeFileSync(target, 'external\n');
+  // Force a distinct mtime: Windows filesystems can have coarse timestamp
+  // granularity (>= 1 s), so a fast rewrite may otherwise keep the same mtime
+  // and the stale-save guard would not fire.
+  const now = Date.now();
+  fs.utimesSync(target, now / 1000, now / 1000);
   assert.throws(() => manager.save(workspace, 'README.md', 'overwrite', file.modifiedAt), /外部修改/);
 });
 
