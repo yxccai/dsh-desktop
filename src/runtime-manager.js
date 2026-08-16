@@ -15,26 +15,35 @@ const {
 
 function inspectService(url, timeoutMs = 1500) {
   return new Promise((resolve) => {
+    let settled = false;
+    const done = (value) => { if (!settled) { settled = true; resolve(value); } };
     let parsed;
-    try { parsed = new URL(url); } catch { resolve('unreachable'); return; }
+    try { parsed = new URL(url); } catch { done('unreachable'); return; }
     const transport = parsed.protocol === 'https:' ? https : http;
-    const request = transport.get(parsed, (response) => {
-      let body = '';
-      response.setEncoding('utf8');
-      response.on('data', (chunk) => {
-        if (body.length < 256 * 1024) body += chunk;
-        if (body.length >= 256 * 1024) response.destroy();
+    let request = null;
+    try {
+      request = transport.get(parsed, (response) => {
+        let body = '';
+        response.setEncoding('utf8');
+        response.on('data', (chunk) => {
+          if (body.length < 256 * 1024) body += chunk;
+          if (body.length >= 256 * 1024) response.destroy();
+        });
+        response.on('end', () => {
+          const isDsh = response.statusCode === 200
+            && body.includes('window.__DSH_BOOT__')
+            && body.includes('@deepseek-ai/dsh-');
+          done(isDsh ? 'dsh' : 'other');
+        });
+        response.on('error', () => done('other'));
       });
-      response.on('end', () => {
-        const isDsh = response.statusCode === 200
-          && body.includes('window.__DSH_BOOT__')
-          && body.includes('@deepseek-ai/dsh-');
-        resolve(isDsh ? 'dsh' : 'other');
-      });
-      response.on('error', () => resolve('other'));
-    });
-    request.once('error', () => resolve('unreachable'));
-    request.setTimeout(timeoutMs, () => { request.destroy(); resolve('unreachable'); });
+    } catch { done('unreachable'); return; }
+    request.once('error', () => done('unreachable'));
+    // A standalone timer (not request.setTimeout) guarantees resolution even
+    // when the platform never fires the socket error for an unreachable port
+    // (observed on macOS arm64): the main-loop timer always runs.
+    const timer = setTimeout(() => { try { request.destroy(); } catch {} done('unreachable'); }, timeoutMs);
+    request.once('close', () => { clearTimeout(timer); done('unreachable'); });
   });
 }
 
