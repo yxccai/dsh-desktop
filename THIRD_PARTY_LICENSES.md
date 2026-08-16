@@ -16,4 +16,11 @@ The bundled npm dependency tree contains additional packages. Release builds sho
 - License: MIT
 - Chromium and other third-party notices are included in the packaged Electron distribution.
 
+## dsh-webui-market-plugin
+
+- Package: `@sanqi-normal/dsh-webui-market-plugin` 0.5.2 (vendored)
+- Project: https://github.com/Sanqi-normal/dsh-webui-market-plugin
+- License: MIT (Copyright (c) 2026 Sanqi-normal)
+- Vendored at `resources/market-plugin/`; license text preserved in `resources/market-plugin/LICENSE`. See `resources/market-plugin/VENDORED.md` for the pinned commit, reproduction steps, and the exact provenance of each file: the Host half (`lib/host.js`) is an unmodified upstream copy, while the Client half (`lib/client.js`) is independently redesigned/modified from the upstream client under the MIT license (original command-center/list UI, upstream host API contract preserved). Used as an optional managed Web Profile plugin; DSH Desktop's own market-management UI and `src/web-market-manager.js` are original DSH Desktop code.
+
 This desktop project is unofficial and is not affiliated with or endorsed by DeepSeek.

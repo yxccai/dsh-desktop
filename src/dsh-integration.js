@@ -11,6 +11,45 @@ function renderBlock(packageName) {
   return `${START}\n- insert:\n    - id: desktop-plugin-center\n      name: '${packageName}'\n${END}`;
 }
 
+/**
+ * Replace (or append) one managed marker-delimited block in a patch document.
+ * Shared by every DSH Desktop-owned insertion so multiple managers can
+ * coexist in the same home-level `cordis.patch.yml` without touching each
+ * other's content. Pure string helper.
+ * @param {string} current - full current patch text.
+ * @param {string} start - block start marker.
+ * @param {string} end - block end marker.
+ * @param {string} block - replacement block (markers included).
+ * @returns the patched document text.
+ */
+function upsertManagedBlock(current, start, end, block) {
+  const s = current.indexOf(start);
+  const e = current.indexOf(end);
+  if (s >= 0 && e > s) return `${current.slice(0, s)}${block}${current.slice(e + end.length)}`;
+  const trimmed = current.trim();
+  if (trimmed === '' || trimmed === '[]') return `${block}\n`;
+  return `${current.trimEnd()}\n\n${block}\n`;
+}
+
+/**
+ * Remove one managed marker-delimited block from a patch document, tidying
+ * leftover blank lines and keeping the document a valid YAML list.
+ * @param {string} current - full current patch text.
+ * @param {string} start - block start marker.
+ * @param {string} end - block end marker.
+ * @returns the patched document text without the block.
+ */
+function stripManagedBlock(current, start, end) {
+  const s = current.indexOf(start);
+  const e = current.indexOf(end);
+  if (s < 0 || e <= s) return current;
+  let next = `${current.slice(0, s)}${current.slice(e + end.length)}`;
+  next = next.replace(/\n{3,}/g, '\n\n');
+  if (next.trim() === '') return '[]\n';
+  next = next.replace(/\n+$/, '\n');
+  return next;
+}
+
 function bridgeDigest(directory) {
   const hash = crypto.createHash('sha256');
   for (const name of ['package.json', path.join('lib', 'index.js'), path.join('lib', 'client.js')]) {
@@ -53,15 +92,7 @@ function ensureDshIntegration(dshHome, packageName = '@yxccai/dsh-desktop-plugin
   fs.mkdirSync(home, { recursive: true });
   const current = fs.existsSync(patchPath) ? fs.readFileSync(patchPath, 'utf8') : '[]\n';
   const block = renderBlock(packageName);
-  let next;
-  const start = current.indexOf(START);
-  const end = current.indexOf(END);
-  if (start >= 0 && end > start) {
-    next = `${current.slice(0, start)}${block}${current.slice(end + END.length)}`;
-  } else {
-    const trimmed = current.trim();
-    next = trimmed === '[]' || trimmed === '' ? `${block}\n` : `${current.trimEnd()}\n\n${block}\n`;
-  }
+  const next = upsertManagedBlock(current, START, END, block);
   if (next === current) return { changed: false, patchPath };
   const temp = `${patchPath}.tmp-${process.pid}-${Date.now()}`;
   fs.writeFileSync(temp, next, { encoding: 'utf8', mode: 0o600 });
@@ -69,4 +100,4 @@ function ensureDshIntegration(dshHome, packageName = '@yxccai/dsh-desktop-plugin
   return { changed: true, patchPath };
 }
 
-module.exports = { ensureDshIntegration, installBridgePackage, renderBlock, START, END };
+module.exports = { ensureDshIntegration, installBridgePackage, renderBlock, START, END, upsertManagedBlock, stripManagedBlock };

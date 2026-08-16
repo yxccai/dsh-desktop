@@ -13,4 +13,11 @@ contextBridge.exposeInMainWorld('pluginCenter', Object.freeze({
   backgroundOpacity: (opacity) => ipcRenderer.invoke('plugin-center:background-opacity', opacity),
   backgroundClear: () => ipcRenderer.invoke('plugin-center:background-clear'),
   openFolder: () => ipcRenderer.invoke('plugin-center:open-folder'),
+  webMarket: Object.freeze({
+    list: () => ipcRenderer.invoke('web-market:list'),
+    install: () => ipcRenderer.invoke('web-market:install'),
+    enable: () => ipcRenderer.invoke('web-market:enable'),
+    disable: () => ipcRenderer.invoke('web-market:disable'),
+    uninstall: () => ipcRenderer.invoke('web-market:uninstall'),
+  }),
 }));

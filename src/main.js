@@ -7,7 +7,9 @@ const { RuntimeManager } = require('./runtime-manager');
 const { configDefaults, loadConfig } = require('./config');
 const { detectEnvironment } = require('./environment-detector');
 const { PluginManager } = require('./plugin-manager');
+const { WebMarketManager } = require('./web-market-manager');
 const { ensureDshIntegration, installBridgePackage } = require('./dsh-integration');
+const { isPluginCenterSender, isWebMarketSender } = require('./ipc-guards');
 const { ProjectPanelManager } = require('./project-panel-manager');
 const { allowsDesktopPermission } = require('./desktop-permissions');
 
@@ -22,6 +24,7 @@ let pluginCenterWindow = null;
 let tray = null;
 let runtime = null;
 let pluginManager = null;
+let webMarketManager = null;
 let projectPanelManager = null;
 let config = null;
 let quitting = false;
@@ -133,14 +136,13 @@ function createPluginCenterWindow() {
   pluginCenterWindow.loadFile(path.join(__dirname, 'plugin-center.html'));
 }
 
-function isPluginCenterSender(event) {
-  if (pluginCenterWindow && !pluginCenterWindow.isDestroyed() && event.sender === pluginCenterWindow.webContents) return true;
-  return Boolean(mainWindow && !mainWindow.isDestroyed() && event.sender === mainWindow.webContents && isAllowedNavigation(event.sender.getURL()));
+function senderContext(event) {
+  return { pluginCenterWindow, mainWindow, sender: event.sender, isAllowedNavigation };
 }
 
 function registerPluginCenterIpc() {
   const handle = (channel, operation) => ipcMain.handle(channel, async (event, value) => {
-    if (!isPluginCenterSender(event)) throw new Error('不允许的插件中心请求');
+    if (!isPluginCenterSender(senderContext(event))) throw new Error('不允许的插件中心请求');
     return operation(value);
   });
   handle('plugin-center:list', () => pluginManager.list());
@@ -184,6 +186,20 @@ function registerPluginCenterIpc() {
     if (result) throw new Error(result);
     return true;
   });
+}
+
+function registerWebMarketIpc() {
+  const handle = (channel, operation) => ipcMain.handle(channel, async (event) => {
+    // Trusted from the plugin-center window AND the exact main DSH page (the
+    // Web settings bridge's 内置插件 tab card calls through src/preload.js).
+    if (!isWebMarketSender(senderContext(event))) throw new Error('不允许的 Web 市场请求');
+    return operation();
+  });
+  handle('web-market:list', () => webMarketManager.list());
+  handle('web-market:install', () => webMarketManager.install());
+  handle('web-market:enable', () => webMarketManager.setEnabled(true));
+  handle('web-market:disable', () => webMarketManager.setEnabled(false));
+  handle('web-market:uninstall', () => webMarketManager.uninstall());
 }
 
 function registerProjectPanelIpc() {
@@ -260,11 +276,16 @@ async function start() {
     catalogPath: path.join(resourceRoot, 'plugin-catalog.json'),
     bundleRoot: path.join(resourceRoot, 'plugins'),
   });
+  webMarketManager = new WebMarketManager({
+    dshHome: config.dshHome,
+    bundleRoot: path.join(resourceRoot, 'market-plugin'),
+  });
   const bridge = installBridgePackage(config.dshHome, path.join(resourceRoot, 'dsh-plugin-center'));
   if (bridge.changed) log(`Installed DSH settings bridge package at ${bridge.target}`);
   const integration = ensureDshIntegration(config.dshHome);
   if (integration.changed || bridge.changed) log(`Enabled DSH settings Plugin Center in ${integration.patchPath}; DSH restart required`);
   registerPluginCenterIpc();
+  registerWebMarketIpc();
   registerProjectPanelIpc();
   const environment = await detectEnvironment({
     appPath: app.getAppPath(),

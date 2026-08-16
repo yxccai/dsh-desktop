@@ -35,4 +35,14 @@ contextBridge.exposeInMainWorld('dshDesktop', Object.freeze({
     revertSnapshot: (root, id) => call('project-panel:revert-snapshot', { root, id }),
     openExternal: (root, path) => call('project-panel:open-external', { root, path }),
   }),
+  // Optional managed Web Profile plugin market (awesome-dsh-plugin.com). The
+  // main DSH page calls this through the Web settings bridge; the desktop
+  // plugin-center window uses the same channels via its own preload.
+  webMarket: Object.freeze({
+    list: () => call('web-market:list'),
+    install: () => call('web-market:install'),
+    enable: () => call('web-market:enable'),
+    disable: () => call('web-market:disable'),
+    uninstall: () => call('web-market:uninstall'),
+  }),
 }));

@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Add an optional managed Web plugin market (`@sanqi-normal/dsh-webui-market-plugin`, vendored MIT at `resources/market-plugin`) that is mounted into the shared `DSH_HOME` on demand, giving the Web GUI a Settings → Plugins → Plugin Market tab without ever touching `profiles/web`.
+- Manage the market transactionally from the desktop Plugin Center (new Web 插件市场 tab) and from the Web settings bridge: install / enable / disable / uninstall via `src/web-market-manager.js`, with a fixed content digest, foreign-package conflict refusal, and rollback on failure.
+- Expose `dshDesktop.webMarket` in the main-window preload and accept IPC calls from the exact trusted main DSH page (in addition to the plugin-center window) through pure, unit-tested sender guards in `src/ipc-guards.js`.
+- Rename the Web settings bridge tab from 插件中心 to 内置插件 and add a managed market card there (status, install/enable/disable/uninstall, explicit third-party warning, restart note); bump `@yxccai/dsh-desktop-plugin-center` to 0.5.1.
+- Redesign the vendored market client UI/CSS from the upstream grid cards into an original command-center/list layout (`.wmp-*` styles: environment KPI banner, command palette, category rail, numbered plugin list, docked task deck) while preserving the upstream host API contract byte-for-byte; update `VENDORED.md` to state that the host is based on upstream while the client is independently redesigned under MIT.
+- Add documentation and tests: `THIRD_PARTY_LICENSES.md` entry, README/README.zh-CN Web market sections, CHANGELOG entries, IPC-guard tests, and extended WebMarketManager / vendored-bundle tests.
 - Add three bundled managed color themes alongside the Ocean theme — Aurora (green/violet), Rose (sunset pink), and Sand (warm amber) — each with light/dark token overrides and a reversible gradient background, selectable and swatch-previewed in the Plugin Center.
 - Generalize the managed theme bridge so Plugin Center lists every bundled theme, applies token overrides for the enabled theme, and fully removes the previous theme's token layer and background styles when switching or disabling.
 

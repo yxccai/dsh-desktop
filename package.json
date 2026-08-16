@@ -9,8 +9,8 @@
   "scripts": {
     "start": "electron .",
     "dev": "electron .",
-    "check": "node --check src/main.js && node --check src/desktop-permissions.js && node --check src/preload.js && node --check src/plugin-center-preload.js && node --check src/plugin-center.js && node --check src/plugin-manager.js && node --check src/project-panel-manager.js && node --check src/dsh-integration.js && node --check src/runtime-manager.js && node --check src/config.js && node --check src/environment-detector.js && node --check resources/dsh-plugin-center/lib/client.js",
-    "test": "node --test",
+    "check": "node --check src/main.js && node --check src/desktop-permissions.js && node --check src/preload.js && node --check src/ipc-guards.js && node --check src/plugin-center-preload.js && node --check src/plugin-center.js && node --check src/plugin-manager.js && node --check src/web-market-manager.js && node --check src/project-panel-manager.js && node --check src/dsh-integration.js && node --check src/runtime-manager.js && node --check src/config.js && node --check src/environment-detector.js && node --check resources/dsh-plugin-center/lib/client.js && node --check resources/market-plugin/lib/host.js && node --check resources/market-plugin/lib/client.js",
+    "test": "node --test \"test/*.test.js\"",
     "build": "electron-builder --win nsis portable",
     "build:win": "electron-builder --win nsis portable --x64",
     "build:win:setup": "electron-builder --win nsis --x64 --config.win.artifactName=DSH-Desktop-Setup-${version}-${os}-${arch}.${ext}",

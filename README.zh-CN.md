@@ -16,6 +16,7 @@
 - **完整 Web 功能**：直接使用原始 DSH Web，尽可能保持功能和插件兼容性。
 - **安全隔离**：网页不直接获得 Node.js、文件系统或任意命令执行权限。
 - **插件中心**：安装、启用、停用和管理推荐的 Agent Preset，不覆盖已有用户内容。
+- **Web 插件市场**：可选地把内置的社区插件市场（`@sanqi-normal/dsh-webui-market-plugin`，MIT 固定版本）挂载到共享的 `DSH_HOME`，让 Web 界面获得「设置 → 插件 → 插件市场」入口；插件中心内以事务方式管理，不修改 `profiles/web`。详见 [docs/web-market.md](docs/web-market.md)。
 - **项目面板**：在聊天右侧浏览和搜索文件、多标签预览与编辑；Git 项目和普通非 Git 目录都支持对话变更、Diff、撤销和恢复项目快照。
 - **持续扩展**：后续将完善首次启动向导、自动更新、更多桌面功能和跨平台支持。
 
@@ -57,6 +58,15 @@ DSH Desktop 会自动选择可用环境：
 项目会话会在每次回复下方显示本次对话实际修改或生成的文件；点击文件名后在右侧以多标签打开，标签顶部显示文件名并可用 `×` 关闭。预览支持 Markdown、HTML、代码、Diff、CSV、PDF、图片和文本，以及源码/预览切换、分屏编辑和带外部修改检测的原子保存；面板打开时聊天区会同步缩窄，不会被遮挡。“变更”页提供真实 Git 状态、Diff 和单文件撤销。面板宽度、折叠状态和当前页面均按项目保存。
 
 每次助手回复完成后，Git 项目会通过独立临时索引记录可恢复的 Tree 快照，不会改动用户暂存区；普通非 Git 目录则使用 DSH Desktop 数据目录中的内容 Blob 快照，不会执行 `git init` 或污染项目目录。两种模式都会在恢复前自动保存当前状态作为恢复点。Office 文件目前使用系统应用打开，后续再增加 DOCX/XLSX/PPTX 内置渲染。
+
+## Web 插件市场（可选）
+
+DSH Desktop 内置社区插件市场 [`@sanqi-normal/dsh-webui-market-plugin`](https://github.com/Sanqi-normal/dsh-webui-market-plugin)（MIT，vendored 于 `resources/market-plugin`），可按需挂载到共享的 `DSH_HOME`，让 DSH Web 界面获得「设置 → 插件 → 插件市场」入口：浏览 [awesome-dsh-plugin.com](https://awesome-dsh-plugin.com/) 社区目录，把插件安装/卸载到 web profile。
+
+- **两个管理入口**：桌面插件中心窗口的「Web 插件市场」页，以及 Web 设置桥的「内置插件」页卡片。安装 / 启用 / 停用 / 卸载都是互斥的事务操作，作用于 `$DSH_HOME/cordis.patch.yml` 与 `$DSH_HOME/node_modules/@sanqi-normal/dsh-webui-market-plugin`；`$DSH_HOME/profiles/web` 永不被修改。
+- **第三方风险提示**：市场中的插件由社区作者编写，安装后会在 DSH 进程内以宿主权限运行（文件、网络、命令行）。请只安装你信任的来源。桌面应用内置的是固定版本并校验包完整性，拒绝操作外来或已被篡改的内容，但对第三方插件的行为不承担任何责任。
+- **需要重启**：变更在 DSH web 服务重启后生效，当前运行的会话不会被中断。
+- 来源与复现说明见 `resources/market-plugin/VENDORED.md`：Host 半端是未修改的上游副本，Client 半端是独立重设计的原创 UI（MIT）。
 
 ## 插件兼容
 
