@@ -64,7 +64,8 @@ DSH Desktop 会自动选择可用环境：
 DSH Desktop 内置社区插件市场 [`@sanqi-normal/dsh-webui-market-plugin`](https://github.com/Sanqi-normal/dsh-webui-market-plugin)（MIT，vendored 于 `resources/market-plugin`），可按需挂载到共享的 `DSH_HOME`，让 DSH Web 界面获得「设置 → 插件 → 插件市场」入口：浏览 [awesome-dsh-plugin.com](https://awesome-dsh-plugin.com/) 社区目录，把插件安装/卸载到 web profile。
 
 - **两个管理入口**：桌面插件中心窗口的「Web 插件市场」页，以及 Web 设置桥的「内置插件」页卡片。安装 / 启用 / 停用 / 卸载都是互斥的事务操作，作用于 `$DSH_HOME/cordis.patch.yml` 与 `$DSH_HOME/node_modules/@sanqi-normal/dsh-webui-market-plugin`；`$DSH_HOME/profiles/web` 永不被修改。
-- **无需全局安装 pnpm**：应用内置 pnpm 并生成 PATH 垫片（`src/pnpm-runtime.js`），随每个 DSH 进程继承，因此 Windows 上即使从未全局安装 pnpm（npx / global / bundled 启动方式），市场安装也能正常执行；若 pnpm 确实不可用，市场会给出清晰的中文提示，而不是一堆乱码。
+- **无需全局安装 pnpm**：应用内置 pnpm 并生成 PATH 垫片（`src/pnpm-runtime.js`），随每个 DSH 进程继承，因此 Windows 上即使从未全局安装 pnpm（npx / global / bundled 启动方式），市场安装也能正常执行；手动在终端启动的 DSH 服务也会自动回退到 `$DSH_HOME/bin` 下的内置 pnpm。若 pnpm 确实不可用，市场会给出清晰的中文提示，而不是一堆乱码。
+- **自动处理常见安装问题**：git 依赖的构建脚本自动放行（`dangerously-allow-all-builds`）；迁移过的 profile 自动沿用原 pnpm store（`npm_config_store_dir`）；锁文件缺少 tarball 完整性校验（旧版 pnpm 生成的裸 GitHub URL 条目）时自动改写为 `github:` 语法并重试一次。
 - **第三方风险提示**：市场中的插件由社区作者编写，安装后会在 DSH 进程内以宿主权限运行（文件、网络、命令行）。请只安装你信任的来源。桌面应用内置的是固定版本并校验包完整性，拒绝操作外来或已被篡改的内容，但对第三方插件的行为不承担任何责任。
 - **需要重启**：变更在 DSH web 服务重启后生效，当前运行的会话不会被中断。
 - 来源与复现说明见 `resources/market-plugin/VENDORED.md`：Host 半端是上游副本加上 DSH Desktop 的两处可移植性补丁（内置 pnpm 的 PATH 垫片、人性化的 pnpm 缺失报错），Client 半端是独立重设计的原创 UI（MIT）。

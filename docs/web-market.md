@@ -79,6 +79,24 @@ patches to the Host (see `VENDORED.md`):
 - **human-readable pnpm failures**: a fast pre-flight `pnpm --version` check
   plus a mojibake-safe close handler replace the raw "command not found"
   output (which arrives as GBK mojibake on Windows) with a clean Chinese hint.
+- **pnpm build-script allowance**: the Host sets
+  `npm_config_dangerously_allow_all_builds=true` for every spawned `dsh`/`pnpm`
+  child, so git-hosted plugins whose `prepare` scripts pnpm would otherwise
+  block (pnpm ≥10 `ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED`) install normally.
+  The catalog whitelist and trial-boot verification are unchanged and still
+  run before any real install.
+- **profile pnpm store pinning**: when a profile's `node_modules` was created
+  by an older/different pnpm store (e.g. `DSH_HOME` moved), the Host reads the
+  recorded `storeDir` from `node_modules/.modules.yaml` and pins
+  `npm_config_store_dir` to it, preventing `ERR_PNPM_UNEXPECTED_STORE` from
+  aborting installs/uninstalls.
+- **lockfile integrity auto-heal**: pnpm ≥10.3x refuses lockfile entries for
+  bare GitHub archive URLs (`https://github.com/.../archive/refs/tags/...`)
+  that lack an `integrity` field (`ERR_PNPM_MISSING_TARBALL_INTEGRITY`), which
+  older pnpm versions wrote. When an op fails with that error, the Host
+  rewrites the affected dependencies to `github:owner/repo#tag` syntax and
+  retries the op once. Profile manifests are also read/written without a UTF-8
+  BOM so the dsh CLI's JSON parser never chokes on `\uFEFF`.
 
 The CLI itself is resolved from the process entry, `$DSH_BIN`, or PATH. When
 the desktop launches DSH through npx/bundled runtime without `$DSH_BIN`, the
@@ -90,7 +108,7 @@ the CLI.
 ## Files
 
 - `resources/market-plugin/` — vendored upstream package (see `VENDORED.md`
-  for attribution, pinned tag/commit, reproduction, and the two DSH Desktop
+  for attribution, pinned tag/commit, reproduction, and the DSH Desktop
   Host patches).
 - `src/pnpm-runtime.js` — bundled-pnpm PATH shim provisioning.
 - `src/web-market-manager.js` — desktop-side transactional manager.
@@ -98,4 +116,5 @@ the CLI.
   patch helpers.
 - `src/main.js`, `src/plugin-center-preload.js` — IPC (`web-market:*`) wiring.
 - `src/plugin-center.html`, `src/plugin-center.js` — the command-center/card UI.
-- `test/web-market-manager.test.js`, `test/market-vendor.test.js` — tests.
+- `test/web-market-manager.test.js`, `test/market-vendor.test.js`,
+  `test/market-host.test.js` — tests.
