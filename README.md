@@ -10,15 +10,14 @@ An unofficial open-source desktop app for [DeepSeek Harness](https://github.com/
 
 ## Highlights
 
-### A desktop shell around the official DSH Web — consistent, secure, and easy to keep current
+### A desktop shell around the official DSH Web — inherited features, secure, and easy to keep current
 
 DSH Desktop does not reimplement anything; it wraps the official DSH Web in a native window:
 
 - **Launch by double-click**: No browser tab, no URL, no command line — double-click the desktop icon and enter the same working environment as the official Web.
-- **Feature parity**: The official DSH Web runs as-is, so every capability, plugin, session, and workspace setting is inherited. There is no "desktop version is missing something" gap.
+- **Feature inheritance**: The official DSH Web runs as the host runtime, loading its full UI and plugin system while sessions, workspace data, and the plugin ecosystem are preserved as-is; the Web plugin market component among the built-in plugins manages plugins for both the desktop and the Web version from one place.
 - **Safe isolation**: The web page never receives direct Node.js, filesystem, or arbitrary command access; Electron sandbox, contextIsolation, loopback-only navigation, and a whitelisted IPC layer form the boundary.
 - **Simple upgrades**: When the official DSH ships a new version, the desktop updates with a version bump and a rebuilt bundle. Existing `DSH_HOME`, sessions, Agent Presets, and persistent plugins carry over unchanged.
-- **Unified plugin management**: Both the built-in and community plugin markets act on the shared `DSH_HOME`, so plugin state is shared between the desktop and the browser version — manage it once, it applies in both.
 
 ### Foundation stays lean — two practical desktop enhancements, nothing more
 
