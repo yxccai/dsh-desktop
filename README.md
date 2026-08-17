@@ -10,30 +10,30 @@ An unofficial open-source desktop app for [DeepSeek Harness](https://github.com/
 
 ## Highlights
 
-### A true shell of the official DSH Web — safe, complete, and future-proof
+### A desktop shell around the official DSH Web — consistent, secure, and easy to keep current
 
-DSH Desktop is not a separate implementation — it is the official DSH Web wrapped in a native desktop window. That single design choice gives it three concrete strengths:
+DSH Desktop does not reimplement anything; it wraps the official DSH Web in a native window:
 
-- **Full feature parity**: It inherits every capability, plugin, session, and workspace setting from the official Web UI. There is no "desktop version is missing something" gap, because the desktop is the Web.
-- **Safe isolation by construction**: The web page never receives direct Node.js, filesystem, or arbitrary command access. The desktop enforces Electron sandbox + context isolation + precise loopback-only navigation origins + a whitelisted IPC layer. Security is structural, not added later.
-- **Upgrades stay simple**: When the official DSH releases a new version, the desktop updates with a version-number change and rebuilt bundle — zero rewrites, zero broken custom code. Existing `DSH_HOME`, sessions, Agent Presets, and persistent plugins carry over unchanged.
+- **Launch by double-click**: No browser tab, no URL, no command line — double-click the desktop icon and enter the same working environment as the official Web.
+- **Feature parity**: The official DSH Web runs as-is, so every capability, plugin, session, and workspace setting is inherited. There is no "desktop version is missing something" gap.
+- **Safe isolation**: The web page never receives direct Node.js, filesystem, or arbitrary command access; Electron sandbox, contextIsolation, loopback-only navigation, and a whitelisted IPC layer form the boundary.
+- **Simple upgrades**: When the official DSH ships a new version, the desktop updates with a version bump and a rebuilt bundle. Existing `DSH_HOME`, sessions, Agent Presets, and persistent plugins carry over unchanged.
+- **Unified plugin management**: Both the built-in and community plugin markets act on the shared `DSH_HOME`, so plugin state is shared between the desktop and the browser version — manage it once, it applies in both.
 
-### Foundation stays lean — only two real desktop enhancements
+### Foundation stays lean — two practical desktop enhancements, nothing more
 
-Instead of stuffing the app with half-used features, DSH Desktop keeps the official Web experience clean and adds exactly two things that matter at a desk:
+The base build does not pile on features; it keeps the official Web experience and adds only the two enhancements most useful at a desk:
 
-- **Project panel** (conversation-aware, beside the chat): Every turn shows the files actually modified or produced. Multi-tab previews cover Markdown, HTML, source code, diff, CSV, PDF, images, and plain text — with split editing and conflict-aware atomic saves. Git workspaces show real status, diff, and per-file discard; non-Git directories use content-blob snapshots (no `git init`, no pollution). Each reply records a recoverable snapshot; restoring always saves the current state as a recovery point first.
-- **Built-in plugins** (ready out of the box): Official curated capabilities — multiple color themes (Deep Ocean Blue gradient, Aurora Green-Purple, Rose Sunset Pink, Warm Sand Amber; light and dark modes), custom image backgrounds with native picker, transparency control, and instant disable, plus a lightweight desktop writing assistant (drafting, rewriting, summarizing, translating Agent). Nothing extra crowds the experience; these are the features people actually reach for.
+- **Project panel**: Beside the chat, it lists the files actually modified or produced by each reply. Multi-tab previews cover Markdown, HTML, source code, diff, CSV, PDF, images, and text, with split editing and conflict-aware atomic saves. Git workspaces show real status and per-file discard; non-Git directories use content snapshots (no `git init`, nothing written into the project). Each reply records a recoverable snapshot, and restoring always saves the current state as a recovery point first.
+- **Built-in plugins (optional install)**: Built-ins are offered as a selectable catalog rather than pre-installed. Available now: multiple color themes (Deep Ocean Blue, Aurora Green-Purple, Rose Sunset Pink, Warm Sand Amber, each with light and dark modes), a custom image background (native file picker, adjustable opacity, instant disable), and a lightweight writing assistant (drafting, rewriting, summarizing, translating). Each can be installed, disabled, or uninstalled on demand.
 
-### Extensible and creative — a high ceiling from day one
+### Extensible and creative — a complete plugin ecosystem on a lean base
 
-The foundation is minimal; the ceiling is high:
+The base stays light; the extension options are available from day one:
 
-- **Built-in plugins keep growing**: New official curated plugins are delivered as transactionally managed updates with digest verification. They can be installed, disabled, or uninstalled without touching your user content or profiles.
-- **Community plugin market inside the app**: A fixed, digest-verified copy of the MIT-licensed market component mounts into your shared `DSH_HOME`. Once mounted, the Web GUI gains a **Settings → Plugins → Plugin Market** tab that browses awesome-dsh-plugin.com — browse, install, update, and uninstall community plugins in one click. The app bundles its own `pnpm`, so nothing needs to be installed globally. Because the desktop and the browser version share the same `DSH_HOME`, plugins installed from either side work in both.
-- **Shared data, shared growth**: Sessions, Agent Presets, persistent plugins, workspace settings — everything lives in one place. The desktop enhances it; it never replaces or fragments it.
-
-In short: clean today, expandable tomorrow — official plugin ecosystem, community market, and continuously updated built-in plugins all work out of the box.
+- **Built-in plugins keep growing**: Official curated plugins ship through a trusted channel with integrity verification, and can be installed, disabled, or uninstalled without touching user content.
+- **Community plugin market**: A fixed, verified copy of the community market component is included. Once enabled, Settings → Plugins → Plugin Market browses [awesome-dsh-plugin.com](https://awesome-dsh-plugin.com/) — browse, install, update, and uninstall community plugins in one click, with a bundled `pnpm` so nothing needs to be installed globally. Installs go into the shared `DSH_HOME` and work in both the desktop and the browser version.
+- **Scale on demand**: Add capabilities from the built-in and community catalogs when you need them; keep the base experience lean when you do not.
 
 ## Download
 
