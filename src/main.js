@@ -28,6 +28,41 @@ let pluginManager = null;
 let webMarketManager = null;
 let projectPanelManager = null;
 let config = null;
+
+/** Simple startup page shown while the DSH service is starting. */
+const STARTUP_HTML = `<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<style>
+  html, body { height: 100%; margin: 0; }
+  body { display: flex; align-items: center; justify-content: center;
+         background: #101820; color: #d8e6f0; font-family: system-ui, "Segoe UI", sans-serif; }
+  .box { text-align: center; }
+  .spinner { width: 36px; height: 36px; margin: 0 auto 18px;
+             border: 3px solid rgba(72, 215, 238, .25); border-top-color: #48d7ee;
+             border-radius: 50%; animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .title { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+  .hint { font-size: 13px; color: #8fa6b3; }
+</style>
+</head>
+<body>
+  <div class="box">
+    <div class="spinner"></div>
+    <div class="title">DSH Desktop 正在启动…</div>
+    <div class="hint">正在准备 DeepSeek Harness 运行环境</div>
+  </div>
+</body>
+</html>`;
+
+/** Navigate the main window to the real DSH URL (no-op when already there). */
+function loadMainUrl() {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  const current = mainWindow.webContents.getURL();
+  if (current === config.url || current.startsWith(config.url + '/')) return;
+  mainWindow.loadURL(config.url).catch((error) => log(`loadURL failed: ${error.message}`));
+}
 let quitting = false;
 
 function userFile(name) {
@@ -103,7 +138,11 @@ function createWindow() {
     requestQuit(config.closeBehavior !== 'keep');
   });
   mainWindow.on('closed', () => { mainWindow = null; });
-  mainWindow.loadURL(config.url).catch((error) => log(`loadURL failed: ${error.message}`));
+  // Show a local startup page immediately so the window never appears blank
+  // while the DSH service is starting; start() switches to the real URL once
+  // ensureReady() returns.
+  mainWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(STARTUP_HTML)}`)
+    .catch((error) => log(`startup page failed: ${error.message}`));
 }
 
 function createPluginCenterWindow() {
@@ -314,20 +353,32 @@ async function start() {
     log('Bundled pnpm not found; market installs will rely on a system pnpm on PATH');
   }
   runtime = new RuntimeManager(config, log, environment, { markerPath: userFile('dsh-ownership.json') });
-  const mode = await runtime.ensureReady();
-  log(`Runtime ready (${mode}) at ${config.url}`);
+  // Create the window (showing the local startup page) BEFORE waiting for the
+  // DSH service, so a slow first start on a cold boot never looks frozen or
+  // spawns a second blank window from a stray double-click.
   createWindow();
   createTray();
+  const mode = await runtime.ensureReady();
+  log(`Runtime ready (${mode}) at ${config.url}`);
+  loadMainUrl();
 }
 
 const lock = app.requestSingleInstanceLock();
 if (!lock) app.quit();
 else {
   app.on('second-instance', () => {
-    if (!mainWindow && config && !quitting) createWindow();
-    mainWindow?.restore();
-    mainWindow?.show();
-    mainWindow?.focus();
+    // Never create a second window here: during startup mainWindow may exist
+    // but still show the startup page, and createWindow() would otherwise
+    // produce a blank duplicate. Just surface the existing window, or rebuild
+    // it when it was closed but the app is still running (tray/keep modes).
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.restore();
+      mainWindow.show();
+      mainWindow.focus();
+    } else if (config && !quitting) {
+      createWindow();
+      loadMainUrl();
+    }
   });
   app.whenReady().then(start).catch(async (error) => {
     log(error.stack || error.message);
