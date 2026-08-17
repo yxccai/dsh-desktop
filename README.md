@@ -12,27 +12,27 @@ An unofficial open-source desktop app for [DeepSeek Harness](https://github.com/
 
 ### A desktop shell around the official DSH Web — inherited features, secure, and easy to keep current
 
-DSH Desktop does not reimplement anything; it wraps the official DSH Web in a native window:
+DSH Desktop does not reimplement any functionality; it wraps the official DSH Web in a native desktop window:
 
-- **Launch by double-click**: No browser tab, no URL, no command line — double-click the desktop icon and enter the same working environment as the official Web.
-- **Feature inheritance**: The official DSH Web runs as the host runtime, loading its full UI and plugin system while sessions, workspace data, and the plugin ecosystem are preserved as-is; the Web plugin market component among the built-in plugins manages plugins for both the desktop and the Web version from one place.
-- **Safe isolation**: The web page never receives direct Node.js, filesystem, or arbitrary command access; Electron sandbox, contextIsolation, loopback-only navigation, and a whitelisted IPC layer form the boundary.
+- **One-click launch**: No browser tab, no URL, no command line — double-click the desktop icon to enter the same runtime environment as the official Web.
+- **Feature inheritance**: The official DSH Web serves as the host runtime, loading its full UI and plugin system while sessions, workspace data, and the plugin ecosystem are fully preserved; the Web plugin market component among the built-in plugins manages plugins for both the desktop and the Web version from a single place.
+- **Safe isolation**: The renderer never receives direct Node.js, filesystem, or arbitrary command access; the Electron sandbox, contextIsolation, loopback-only navigation, and a whitelisted IPC layer form the isolation boundary.
 - **Simple upgrades**: When the official DSH ships a new version, the desktop updates with a version bump and a rebuilt bundle. Existing `DSH_HOME`, sessions, Agent Presets, and persistent plugins carry over unchanged.
 
-### Foundation stays lean — two practical desktop enhancements, nothing more
+### Foundation stays lean — only two practical desktop enhancements
 
-The base build does not pile on features; it keeps the official Web experience and adds only the two enhancements most useful at a desk:
+The base build does not pile on features; it keeps the official Web experience and adds only the two enhancements most useful in a desktop context:
 
 - **Project panel**: Beside the chat, it lists the files actually modified or produced by each reply. Multi-tab previews cover Markdown, HTML, source code, diff, CSV, PDF, images, and text, with split editing and conflict-aware atomic saves. Git workspaces show real status and per-file discard; non-Git directories use content snapshots (no `git init`, nothing written into the project). Each reply records a recoverable snapshot, and restoring always saves the current state as a recovery point first.
-- **Built-in plugins (optional install)**: Built-ins are offered as a selectable catalog rather than pre-installed. Available now: multiple color themes (Deep Ocean Blue, Aurora Green-Purple, Rose Sunset Pink, Warm Sand Amber, each with light and dark modes), a custom image background (native file picker, adjustable opacity, instant disable), and a lightweight writing assistant (drafting, rewriting, summarizing, translating). Each can be installed, disabled, or uninstalled on demand.
+- **Built-in plugins (optional install)**: Built-ins are offered as a selectable catalog rather than pre-installed. Available now: multiple color themes (Deep Ocean Blue, Aurora Green-Purple, Rose Sunset Pink, Warm Sand Amber, each with light and dark modes), a custom image background (native file picker, adjustable opacity, instant disable), and a lightweight writing assistant (drafting, rewriting, summarizing, translating). All support install, disable, and uninstall on demand.
 
 ### Extensible and creative — a complete plugin ecosystem on a lean base
 
-The base stays light; the extension options are available from day one:
+The base stays light; extension capabilities are directly available:
 
 - **Built-in plugins keep growing**: Official curated plugins ship through a trusted channel with integrity verification, and can be installed, disabled, or uninstalled without touching user content.
-- **Community plugin market**: A fixed, verified copy of the community market component is included. Once enabled, Settings → Plugins → Plugin Market browses [awesome-dsh-plugin.com](https://awesome-dsh-plugin.com/) — browse, install, update, and uninstall community plugins in one click, with a bundled `pnpm` so nothing needs to be installed globally. Installs go into the shared `DSH_HOME` and work in both the desktop and the browser version.
-- **Scale on demand**: Add capabilities from the built-in and community catalogs when you need them; keep the base experience lean when you do not.
+- **Community plugin market**: A fixed, verified copy of the community market component is included. Once enabled, Settings → Plugins → Plugin Market browses [awesome-dsh-plugin.com](https://awesome-dsh-plugin.com/) — install, update, and uninstall community plugins centrally, with a bundled `pnpm` so nothing needs to be installed globally. Installs go into the shared `DSH_HOME` and work in both the desktop and the browser version.
+- **Scale on demand**: Add capabilities from the built-in and community catalogs when needed; keep the base experience lean when not.
 
 ## Download
 
@@ -66,6 +66,14 @@ On first launch, Control-click the app in Finder and choose **Open**. If macOS s
 ### Managed Plugin Center
 
 ![DSH Desktop Plugin Center](docs/images/plugin-center.png)
+
+### Community plugin market
+
+After the bundled community market component is mounted into the shared `DSH_HOME`, it manages plugins already installed on both the desktop and the Web side, and lets you browse and install newly added community plugins at any time:
+
+![Community plugin market - plugin management](docs/images/community-market-1.png)
+
+![Community plugin market - plugin install](docs/images/community-market-2.png)
 
 ## How it works
 
