@@ -20,7 +20,9 @@
     "pack": "electron-builder --dir"
   },
   "dependencies": {
+    "@deepseek-ai/cordis-plugin-group": "1.0.1",
     "@deepseek-ai/dsh": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-invariants": "0.1.0-rc.6",
     "@yxccai/dsh-desktop-plugin-center": "file:resources/dsh-plugin-center",
     "pnpm": "^10.12.0"
   },
