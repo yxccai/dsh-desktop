@@ -37,15 +37,14 @@ DSH Desktop 不重复实现功能，而是以官方 DSH Web 为核心封装原�
 
 ## 下载
 
-### 三种使用方式
+### 两种使用方式
 
 | 方式 | 适合谁 | 特点 |
 |---|---|---|
-| **一键安装包** | 大多数普通用户 | 双击安装即用，无需任何环境，内置运行时自动启动 DSH |
-| **连接模式** | 已有 Node/DSH、想要最灵活的用户 | 用系统 Node 自己启动 DSH Web，桌面端只做壳连接，不依赖内置运行时 |
-| **从源码运行** | 开发者 | 自己克隆、构建、改代码，`npm start` 走 auto 模式优先复用系统环境 |
+| **一键安装包** | 大多数普通用户 | 双击安装即用，无需任何环境；DSH 由桌面端内置运行时自动启动 |
+| **连接模式** | 已有 Node.js、想要最灵活的用户 | 桌面端同样来自安装包（或源码），但 DSH Web 由你用系统 Node 手动启动，桌面端只做壳连接，不依赖内置运行时 |
 
-三种方式共享同一套数据（`DSH_HOME`、会话、插件），可随时切换。具体步骤见下方「一键安装包」和「[开发者模式（用自己的 DSH Web）](#开发者模式用自己的-dsh-web)」。
+两种方式共享同一套数据（`DSH_HOME`、会话、插件），可随时切换。开发者也可直接[从源码运行](#从源码运行)，`npm start` 走 auto 模式优先复用系统环境。
 
 ### 一键安装包
 
@@ -119,19 +118,25 @@ DSH Desktop 内置社区插件市场 [`@sanqi-normal/dsh-webui-market-plugin`](h
 
 遵循官方 DSH/Cordis 接口的 Host 插件、Slot UI、主题和持久化 Preset 通常具有较好的兼容性。依赖固定 DOM、浏览器扩展或开发 HMR 的插件需要单独测试。
 
-## 开发者模式（用自己的 DSH Web）
+## 连接模式（用自己的 DSH Web）
 
-DSH Desktop 只是壳——它默认按 `auto` 顺序选择运行环境（连接已有服务 → 全局 `dsh` → 系统 `npx` → 内置 runtime）。如果你想**自己用系统 Node 启动 DSH Web**、桌面端只做壳连接（与官方 Web 完全一致、升级最灵活），可以用开发者模式：
+DSH Desktop 只是壳——默认按 `auto` 顺序选择运行环境（连接已有服务 → 全局 `dsh` → 系统 `npx` → 内置 runtime）。如果你希望 DSH Web 由**自己用系统 Node 启动**（与官方 Web 完全一致、升级最灵活），用连接模式：
 
-### 方式 A：连接模式（推荐）
+### 完整步骤
 
-1. 用系统 Node 启动 DSH Web（任意终端）：
+1. **安装 Node.js**（连接模式的前提）：到 [nodejs.org](https://nodejs.org) 下载 LTS 版本并安装。
+
+2. **安装桌面端**（任选其一）：
+   - 下载[一键安装包](#一键安装包)并安装；
+   - 或[从源码运行](#从源码运行)（开发者）。
+
+3. **用系统 Node 启动 DSH Web**（在终端运行，保持窗口开启）：
 
 ```powershell
 npx @deepseek-ai/dsh web --host 127.0.0.1 --port 3080
 ```
 
-2. 把桌面端配置为只连接、不自行启动服务：
+4. **把桌面端配置为只连接、不自行启动服务**：
 
 ```json
 {
@@ -142,11 +147,13 @@ npx @deepseek-ai/dsh web --host 127.0.0.1 --port 3080
 
 配置位置：`<userData>\config.json`（Windows 默认 `C:\Users\<用户名>\AppData\Roaming\dsh-desktop-shell\config.json`；若设置了 `DSH_DESKTOP_HOME` 则在对应目录）。
 
-3. 启动桌面端，它连接你手动启动的 Web，不再使用内置 runtime。
+5. **打开桌面端**：它会检测到 3080 已有 DSH 服务并直接连接，不再使用内置 runtime。
 
 这样你的 DSH 跑在**真正的 Node** 里（`process.execPath` 是 `node.exe`），桌面端只提供窗口、项目面板、内置插件与系统通知——**不依赖 Electron-as-Node 内置运行时**，也能获得最及时的上游更新。
 
-### 方式 B：从源码运行
+> 注意：连接模式下，DSH Web 由你的终端启动并管理，关闭终端即停止服务；桌面端不会自行拉起它。
+
+### 从源码运行
 
 ```powershell
 git clone https://github.com/yxccai/dsh-desktop.git
