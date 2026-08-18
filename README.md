@@ -19,12 +19,13 @@ DSH Desktop does not reimplement any functionality; it wraps the official DSH We
 - **Safe isolation**: The renderer never receives direct Node.js, filesystem, or arbitrary command access; the Electron sandbox, contextIsolation, loopback-only navigation, and a whitelisted IPC layer form the isolation boundary.
 - **Simple upgrades**: When the official DSH ships a new version, the desktop updates with a version bump and a rebuilt bundle. Existing `DSH_HOME`, sessions, Agent Presets, and persistent plugins carry over unchanged.
 
-### Foundation stays lean — only two practical desktop enhancements
+### Foundation stays lean — only a few practical desktop enhancements
 
-The base build does not pile on features; it keeps the official Web experience and adds only the two enhancements most useful in a desktop context:
+The base build does not pile on features; it keeps the official Web experience and adds only the enhancements most useful in a desktop context:
 
 - **Project panel**: Beside the chat, it lists the files actually modified or produced by each reply. Multi-tab previews cover Markdown, HTML, source code, diff, CSV, PDF, images, and text, with split editing and conflict-aware atomic saves. Git workspaces show real status and per-file discard; non-Git directories use content snapshots (no `git init`, nothing written into the project). Each reply records a recoverable snapshot, and restoring always saves the current state as a recovery point first.
 - **Built-in plugins (optional install)**: Built-ins are offered as a selectable catalog rather than pre-installed. Available now: multiple color themes (Deep Ocean Blue, Aurora Green-Purple, Rose Sunset Pink, Warm Sand Amber, each with light and dark modes), a custom image background (native file picker, adjustable opacity, instant disable), and a lightweight writing assistant (drafting, rewriting, summarizing, translating). All support install, disable, and uninstall on demand.
+- **Windows system notifications (optional)**: Get a native notification when the agent awaits approval, finishes a task, or stops with an error — no need to watch the page constantly. Toggle it anytime under Settings → Plugins → Built-in Plugins; off by default.
 
 ### Extensible and creative — a complete plugin ecosystem on a lean base
 
