@@ -39,8 +39,7 @@ DSH Desktop 不重复实现功能，而是以官方 DSH Web 为核心封装原�
 
 请从 [GitHub Releases](https://github.com/yxccai/dsh-desktop/releases/tag/v0.5.0) 下载：
 
-- [Windows x64 安装版](https://github.com/yxccai/dsh-desktop/releases/download/v0.5.0/DSH-Desktop-Setup-0.5.0-win-x64.exe)
-- [Windows x64 便携版](https://github.com/yxccai/dsh-desktop/releases/download/v0.5.0/DSH-Desktop-Portable-0.5.0-win-x64.exe)
+- [Windows x64 安装版](https://github.com/yxccai/dsh-desktop/releases/download/v0.5.0/DSH-Desktop-0.5.0-win-x64.exe)
 - [SHA-256 校验文件](https://github.com/yxccai/dsh-desktop/releases/download/v0.5.0/SHA256SUMS-0.5.0.txt)
 
 ### macOS 测试版
@@ -110,7 +109,7 @@ DSH Desktop 内置社区插件市场 [`@sanqi-normal/dsh-webui-market-plugin`](h
 
 ## 平台支持
 
-- **Windows x64**：安装版和便携版已发布并验证。
+- **Windows x64**：安装版已发布并验证。
 - **macOS Intel / Apple Silicon**：已提供未签名测试版预发布包。首次启动时请在 Finder 中按住 Control 点击应用，选择“打开”；如果 macOS 仍然阻止运行，请前往“系统设置 → 隐私与安全性 → 仍要打开”。正式签名和公证将在后续加入。
 - 其他平台将在后续版本中评估。
 

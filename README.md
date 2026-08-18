@@ -39,8 +39,7 @@ The base stays light; extension capabilities are directly available:
 
 Download from [GitHub Releases](https://github.com/yxccai/dsh-desktop/releases/tag/v0.5.0):
 
-- [Windows x64 Setup](https://github.com/yxccai/dsh-desktop/releases/download/v0.5.0/DSH-Desktop-Setup-0.5.0-win-x64.exe)
-- [Windows x64 Portable](https://github.com/yxccai/dsh-desktop/releases/download/v0.5.0/DSH-Desktop-Portable-0.5.0-win-x64.exe)
+- [Windows x64 Setup](https://github.com/yxccai/dsh-desktop/releases/download/v0.5.0/DSH-Desktop-0.5.0-win-x64.exe)
 - [SHA-256 checksums](https://github.com/yxccai/dsh-desktop/releases/download/v0.5.0/SHA256SUMS-0.5.0.txt)
 
 ### macOS (test build)
@@ -110,7 +109,7 @@ Plugins built on official DSH/Cordis services, Host tools, UI slots, themes, and
 
 ## Platform support
 
-- **Windows x64**: Setup and portable builds are available and tested.
+- **Windows x64**: Setup build is available and tested.
 - **macOS Intel / Apple Silicon**: Unsigned test builds are published as prereleases. On first launch, Control-click the app in Finder and choose **Open**; if macOS still blocks it, use **System Settings → Privacy & Security → Open Anyway**. Signing and notarization are planned.
 - Additional platforms may be considered in future versions.
 
