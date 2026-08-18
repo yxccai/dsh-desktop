@@ -94,12 +94,22 @@ window.__ModuleLoader__.load({
       const [background, setBackground] = React.useState(null);
       const [market, setMarket] = React.useState(null);
       const [marketBusy, setMarketBusy] = React.useState(false);
+       const [notifications, setNotifications] = React.useState({ enabled: false, loading: true, error: '' });
+       const refreshNotifications = async () => {
+         if (!api.notifyConfigGet) return setNotifications({ enabled: false, loading: false, unsupported: true, error: '' });
+         try { const value = await api.notifyConfigGet(); setNotifications({ enabled: value?.enabled === true, loading: false, error: '' }); }
+         catch (error) { setNotifications({ enabled: false, loading: false, error: error?.message || String(error) }); }
+       };
+       const setNotificationsEnabled = async (enabled) => {
+         try { const value = await api.notifyConfigSet(enabled); setNotifications({ enabled: value?.enabled === true, loading: false, error: '' }); }
+         catch (error) { setNotifications((old) => ({ ...old, error: error?.message || String(error) })); }
+       };
       const refreshMarket = async () => {
         if (!api.webMarket) { setMarket({ unsupported: true }); return; }
         try { setMarket(await api.webMarket.list()); } catch (error) { setMarket({ error: error?.message || String(error) }); }
       };
       const refresh = async () => { try { const data = await api.pluginCenter.list(); setState({ loading: false, data, error: "" }); const custom = (data.recommended || []).find((entry) => entry.id === CUSTOM_BACKGROUND_ID); setBackground(custom?.status === 'enabled' ? await api.pluginCenter.backgroundGet() : null); await refreshMarket(); } catch (error) { setState({ loading: false, data: null, error: error?.message || String(error) }); } };
-      React.useEffect(() => { refresh(); }, []);
+      React.useEffect(() => { refresh(); refreshNotifications(); }, []);
       const act = async (action, id) => { try { setState({ loading: false, data: await api.pluginCenter[action](id), error: "" }); window.dispatchEvent(new Event('dsh-desktop-plugin-catalog-change')); } catch (error) { setState((old) => ({ ...old, error: error?.message || String(error) })); } };
       const button = (label, action, id, danger) => h("button", { className: danger ? "dpc-danger" : "", onClick: () => act(action, id) }, label);
       const marketAct = async (action) => {
@@ -142,7 +152,8 @@ window.__ModuleLoader__.load({
         const swatch = managedTheme ? h("div", { className: "dpc-swatch", key: "swatch" }, h("span", { className: "dpc-swatch-label" }, "浅色"), h("span", { className: "dpc-swatch-chip", title: managedTheme.swatch.light[0], style: { background: managedTheme.swatch.light[0], borderColor: managedTheme.swatch.light[1] } }), h("span", { className: "dpc-swatch-label" }, "深色"), h("span", { className: "dpc-swatch-chip", title: managedTheme.swatch.dark[0], style: { background: managedTheme.swatch.dark[0], borderColor: managedTheme.swatch.dark[1] } }), activeManagedThemeOf(state.data) === managedTheme.id ? h("span", { className: "dpc-active-theme" }, "当前生效") : null) : null;
         return h("article", { className: "dpc-card", key: plugin.id }, h("div", { className: "dpc-head" }, h("strong", null, plugin.name), h("span", null, status)), h("p", null, plugin.description), h("div", { className: "dpc-meta" }, `${plugin.author} · ${plugin.version}`), swatch, opacityControl, h("div", { className: "dpc-actions" }, ...actions));
       });
-      return h("section", { className: "dpc-root" }, h("div", { className: "dpc-title" }, h("div", null, h("h2", null, "内置插件"), h("p", null, "管理 DSH Desktop 内置的推荐插件、主题背景，以及可选的 Web 插件市场。")), h("button", { onClick: refresh }, "刷新")), marketCard, h("div", { className: "dpc-note" }, "变更会在新会话中生效，当前会话不会被中断。"), state.error ? h("div", { className: "dpc-error" }, state.error) : null, state.loading ? h("p", null, "正在加载…") : h("div", { className: "dpc-grid" }, ...cards));
+      const notificationRow = notifications.unsupported ? null : h('section', { className: 'dpc-note dpc-notification-row' }, h('div', null, h('strong', null, 'Agent 系统通知'), h('p', null, '有审批请求/任务完成/报错时弹 Windows 通知'), notifications.error ? h('small', { className: 'dpc-error' }, notifications.error) : null), h('input', { type: 'checkbox', checked: notifications.enabled, disabled: notifications.loading, onChange: (event) => setNotificationsEnabled(event.target.checked) }));
+       return h("section", { className: "dpc-root" }, notificationRow, h("div", { className: "dpc-title" }, h("div", null, h("h2", null, "内置插件"), h("p", null, "管理 DSH Desktop 内置的推荐插件、主题背景，以及可选的 Web 插件市场。")), h("button", { onClick: refresh }, "刷新")), marketCard, h("div", { className: "dpc-note" }, "变更会在新会话中生效，当前会话不会被中断。"), state.error ? h("div", { className: "dpc-error" }, state.error) : null, state.loading ? h("p", null, "正在加载…") : h("div", { className: "dpc-grid" }, ...cards));
     }
 
     function workspaceOf(useSessions, useWorkspaces, sessionId) {
@@ -389,9 +400,38 @@ window.__ModuleLoader__.load({
       return () => { cancelled = true; window.removeEventListener('dsh-desktop-plugin-catalog-change', listener); disposeThemeTokens?.(); disposeImageTokens?.(); style?.remove(); imageLayer?.remove(); };
     }
 
-    function apply(ctx) {
-      const slots = ctx.get("slots");
+    function startDesktopNotifications() {
+       if (!api?.notify) return () => {};
+       let cursor = 0;
+       let stopped = false;
+       let inFlight = false;
+       const poll = async () => {
+         if (stopped || inFlight) return;
+         inFlight = true;
+         const controller = new AbortController();
+         const timeout = setTimeout(() => controller.abort(), 1200);
+         try {
+           const response = await fetch(`/api/dsh-desktop-events?since=${cursor}`, { signal: controller.signal });
+           if (!response.ok) return;
+           const data = await response.json();
+           for (const event of (Array.isArray(data?.events) ? data.events : [])) {
+             if (Number.isInteger(event?.seq)) cursor = Math.max(cursor, event.seq);
+             if (typeof event?.title === 'string' && typeof event?.body === 'string') api.notify({ kind: event.kind, title: event.title, body: event.body });
+           }
+         } catch {}
+         finally { clearTimeout(timeout); inFlight = false; }
+       };
+       const timer = setInterval(poll, 1500);
+       poll();
+       return () => { stopped = true; clearInterval(timer); };
+     }
+
+     function apply(ctx) {
+
+       ctx.effect(startDesktopNotifications);
+       const slots = ctx.get("slots");
       if (!slots || !api?.pluginCenter || !api?.projectPanel) return;
+
       ctx.effect(mountProjectColumn);
       ctx.effect(interceptProducedFileClicks);
       ctx.effect(() => applyManagedTheme(ctx));

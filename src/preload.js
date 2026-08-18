@@ -6,6 +6,9 @@ const call = (channel, input) => ipcRenderer.invoke(channel, input);
 
 contextBridge.exposeInMainWorld('dshDesktop', Object.freeze({
   shell: true,
+  notify: (payload) => call('desktop:notify', payload),
+  notifyConfigGet: () => call('desktop:notify-config-get'),
+  notifyConfigSet: (enabled) => call('desktop:notify-config-set', { enabled }),
   pluginCenter: Object.freeze({
     list: () => call('plugin-center:list'),
     install: (id) => call('plugin-center:install', id),

@@ -16,6 +16,7 @@ function configDefaults(paths, env = process.env) {
     workingDirectory: '',
     candidateTimeoutMs: 30000,
     closeBehavior: 'quit-owned',
+    notifications: { enabled: false },
   };
 }
 
@@ -28,6 +29,7 @@ function validateConfig(value) {
   if (!['auto', 'npx', 'global', 'bundled', 'connect'].includes(result.launchMode)) throw new Error('invalid launchMode');
   if (!['system-first', 'bundled-first'].includes(result.runtimePreference)) throw new Error('invalid runtimePreference');
   if (!['quit-owned', 'keep', 'tray'].includes(result.closeBehavior)) throw new Error('invalid closeBehavior');
+  if (!result.notifications || typeof result.notifications !== 'object' || Array.isArray(result.notifications) || typeof result.notifications.enabled !== 'boolean') throw new Error('notifications.enabled must be a boolean');
   for (const field of ['dshHome', 'npmCache', 'workingDirectory', 'command', 'dshVersion', 'runtimePreference']) {
     if (typeof result[field] !== 'string') throw new Error(`${field} must be a string`);
   }

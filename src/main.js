@@ -1,6 +1,6 @@
 'use strict';
 
-const { app, BrowserWindow, Menu, Tray, nativeImage, shell, dialog, ipcMain } = require('electron');
+const { app, BrowserWindow, Menu, Tray, nativeImage, shell, dialog, ipcMain, Notification } = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
 const { RuntimeManager } = require('./runtime-manager');
@@ -228,6 +228,37 @@ function registerPluginCenterIpc() {
   });
 }
 
+function normalizeNotifyPayload(payload) {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return null;
+  if (typeof payload.title !== 'string' || typeof payload.body !== 'string') return null;
+  const title = payload.title.trim();
+  const body = payload.body.trim();
+  if (!title || !body || title.length > 120 || body.length > 500) return null;
+  return { kind: typeof payload.kind === 'string' ? payload.kind.slice(0, 40) : '', title, body };
+}
+
+function registerDesktopNotificationIpc() {
+  const handle = (channel, operation) => ipcMain.handle(channel, async (event, value) => {
+    if (!isWebMarketSender(senderContext(event))) throw new Error('不允许的桌面通知请求');
+    return operation(value);
+  });
+  handle('desktop:notify', (payload) => {
+    const normalized = normalizeNotifyPayload(payload);
+    if (!normalized || !config.notifications.enabled) return false;
+    const notification = new Notification({ title: normalized.title, body: normalized.body });
+    notification.on('click', () => { mainWindow?.show(); mainWindow?.focus(); });
+    notification.show();
+    return true;
+  });
+  handle('desktop:notify-config-get', () => ({ enabled: config.notifications.enabled === true }));
+  handle('desktop:notify-config-set', (value) => {
+    if (!value || typeof value !== 'object' || typeof value.enabled !== 'boolean') throw new Error('通知配置无效');
+    config.notifications.enabled = value.enabled;
+    atomicWriteJson(userFile('config.json'), config);
+    return { enabled: config.notifications.enabled };
+  });
+}
+
 function registerWebMarketIpc() {
   const handle = (channel, operation) => ipcMain.handle(channel, async (event) => {
     // Trusted from the plugin-center window AND the exact main DSH page (the
@@ -325,6 +356,7 @@ async function start() {
   const integration = ensureDshIntegration(config.dshHome);
   if (integration.changed || bridge.changed) log(`Enabled DSH settings Plugin Center in ${integration.patchPath}; DSH restart required`);
   registerPluginCenterIpc();
+  registerDesktopNotificationIpc();
   registerWebMarketIpc();
   registerProjectPanelIpc();
   const environment = await detectEnvironment({

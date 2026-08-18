@@ -59,6 +59,7 @@ test('environment paths become defaults', () => {
   assert.equal(value.dshHome, 'E:/DSH');
   assert.equal(value.npmCache, 'E:/cache');
   assert.equal(value.dshVersion, '0.1.0-rc.6');
+  assert.equal(value.notifications.enabled, false);
 });
 
 test('configuration rejects remote origins and malformed args', () => {

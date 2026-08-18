@@ -52,9 +52,11 @@ function stripManagedBlock(current, start, end) {
 
 function bridgeDigest(directory) {
   const hash = crypto.createHash('sha256');
-  for (const name of ['package.json', path.join('lib', 'index.js'), path.join('lib', 'client.js')]) {
+  for (const name of ['package.json', path.join('lib', 'index.js'), path.join('lib', 'host.js'), path.join('lib', 'client.js')]) {
+    const file = path.join(directory, name);
+    if (!fs.existsSync(file)) continue;
     hash.update(name.replaceAll('\\', '/'));
-    hash.update(fs.readFileSync(path.join(directory, name)));
+    hash.update(fs.readFileSync(file));
   }
   return hash.digest('hex');
 }
