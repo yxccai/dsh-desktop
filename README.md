@@ -41,8 +41,8 @@ The base stays light; extension capabilities are directly available:
 
 | Way | For whom | What you get |
 |---|---|---|
-| **One-click installer** | Most users | Double-click to install and run; no environment needed, the bundled runtime starts DSH automatically |
-| **Connect mode** | Users with Node.js who want maximum flexibility | The desktop still comes from the installer (or source), but you start DSH Web yourself with the system Node; the desktop only connects as a shell and never uses the bundled runtime |
+| **One-click installer** | Most users | Double-click to install and run; no environment needed. Your own data is used (`DSH_HOME`, sessions, plugins), but DSH is started by the desktop's bundled runtime |
+| **Connect mode** | Users with Node.js who want the full official DSH | Not just your data — the DSH Web itself is also started by you with the system Node (npx pulls the latest release); the desktop only connects as a shell and never uses the bundled runtime |
 
 Both ways share the same data (`DSH_HOME`, sessions, plugins) and can be switched freely. Developers can also [run from source](#run-from-source); `npm start` uses `auto` mode and prefers the system environment.
 
@@ -118,9 +118,11 @@ DSH Desktop bundles the community plugin market [`@sanqi-normal/dsh-webui-market
 
 Plugins built on official DSH/Cordis services, Host tools, UI slots, themes, and persistent Presets generally offer the best compatibility. Plugins that depend on fixed DOM structures, browser extensions, or development HMR require separate testing.
 
-## Connect mode (bring your own DSH Web)
+## Connect mode (use the full official DSH Web, not just your data)
 
-DSH Desktop is only a shell — by default it picks a runtime in `auto` order (connect to an existing service → global `dsh` → system `npx` → bundled runtime). If you prefer to run DSH Web yourself with the system Node and let the desktop just connect to it (identical to the official Web, and the most flexible way to stay current), use connect mode:
+The one-click installer keeps your data (`DSH_HOME`, sessions, plugins), but the DSH process is started by the desktop's bundled fixed version (rc.6) as Electron-as-Node. Connect mode goes further: **the DSH Web itself is also started by you with your own system Node** (`npx` pulls the latest official release), and the desktop only connects as a shell — data, process, and version are all under your control.
+
+DSH Desktop is only a shell — by default it picks a runtime in `auto` order (connect to an existing service → global `dsh` → system `npx` → bundled runtime). If you want DSH Web started by your own system Node, use connect mode:
 
 ### Full steps
 
