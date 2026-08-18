@@ -245,6 +245,10 @@ function registerDesktopNotificationIpc() {
   handle('desktop:notify', (payload) => {
     const normalized = normalizeNotifyPayload(payload);
     if (!normalized || !config.notifications.enabled) return false;
+    // Windows notifications do not play a sound by default; beep so the user
+    // actually notices. shell.beep() uses the system default notification
+    // sound on Windows.
+    try { shell.beep(); } catch {}
     const notification = new Notification({ title: normalized.title, body: normalized.body });
     notification.on('click', () => { mainWindow?.show(); mainWindow?.focus(); });
     notification.show();

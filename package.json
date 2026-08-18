@@ -11,10 +11,9 @@
     "dev": "electron .",
     "check": "node --check src/main.js && node --check src/desktop-permissions.js && node --check src/preload.js && node --check src/ipc-guards.js && node --check src/plugin-center-preload.js && node --check src/plugin-center.js && node --check src/plugin-manager.js && node --check src/web-market-manager.js && node --check src/project-panel-manager.js && node --check src/dsh-integration.js && node --check src/runtime-manager.js && node --check src/ownership-marker.js && node --check src/pnpm-runtime.js && node --check src/config.js && node --check src/environment-detector.js && node --check resources/dsh-plugin-center/lib/index.js && node --check resources/dsh-plugin-center/lib/host.js && node --check resources/dsh-plugin-center/lib/client.js && node --check resources/market-plugin/lib/host.js && node --check resources/market-plugin/lib/client.js",
     "test": "node --test --test-force-exit --test-timeout=60000 \"test/*.test.js\"",
-    "build": "electron-builder --win nsis portable --publish never",
-    "build:win": "electron-builder --win nsis portable --x64 --publish never",
+    "build": "electron-builder --win nsis --publish never",
+    "build:win": "electron-builder --win nsis --x64 --publish never",
     "build:win:setup": "electron-builder --win nsis --x64 --publish never --config.win.artifactName=DSH-Desktop-Setup-${version}-${os}-${arch}.${ext}",
-    "build:win:portable": "electron-builder --win portable --x64 --publish never --config.win.artifactName=DSH-Desktop-Portable-${version}-${os}-${arch}.${ext}",
     "build:mac:x64": "electron-builder --mac dmg zip --x64 --publish never",
     "build:mac:arm64": "electron-builder --mac dmg zip --arm64 --publish never",
     "pack": "electron-builder --dir"
@@ -63,8 +62,7 @@
     },
     "win": {
       "target": [
-        "nsis",
-        "portable"
+        "nsis"
       ],
       "artifactName": "DSH-Desktop-${version}-${os}-${arch}.${ext}"
     },
