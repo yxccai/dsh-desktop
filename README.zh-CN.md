@@ -37,6 +37,18 @@ DSH Desktop 不重复实现功能，而是以官方 DSH Web 为核心封装原�
 
 ## 下载
 
+### 三种使用方式
+
+| 方式 | 适合谁 | 特点 |
+|---|---|---|
+| **一键安装包** | 大多数普通用户 | 双击安装即用，无需任何环境，内置运行时自动启动 DSH |
+| **连接模式** | 已有 Node/DSH、想要最灵活的用户 | 用系统 Node 自己启动 DSH Web，桌面端只做壳连接，不依赖内置运行时 |
+| **从源码运行** | 开发者 | 自己克隆、构建、改代码，`npm start` 走 auto 模式优先复用系统环境 |
+
+三种方式共享同一套数据（`DSH_HOME`、会话、插件），可随时切换。具体步骤见下方「一键安装包」和「[开发者模式（用自己的 DSH Web）](#开发者模式用自己的-dsh-web)」。
+
+### 一键安装包
+
 请从 [GitHub Releases](https://github.com/yxccai/dsh-desktop/releases/tag/v0.5.0) 下载：
 
 - [Windows x64 安装版](https://github.com/yxccai/dsh-desktop/releases/download/v0.5.0/DSH-Desktop-0.5.0-win-x64.exe)

@@ -37,6 +37,18 @@ The base stays light; extension capabilities are directly available:
 
 ## Download
 
+### Three ways to use
+
+| Way | For whom | What you get |
+|---|---|---|
+| **One-click installer** | Most users | Double-click to install and run; no environment needed, the bundled runtime starts DSH automatically |
+| **Connect mode** | Users with Node/DSH who want maximum flexibility | Start DSH Web yourself with the system Node; the desktop only connects as a shell and never uses the bundled runtime |
+| **Run from source** | Developers | Clone, build, and modify; `npm start` uses `auto` mode and prefers the system environment |
+
+All three share the same data (`DSH_HOME`, sessions, plugins) and can be switched freely. See the installer below and [Developer mode](#developer-mode-bring-your-own-dsh-web).
+
+### One-click installer
+
 Download from [GitHub Releases](https://github.com/yxccai/dsh-desktop/releases/tag/v0.5.0):
 
 - [Windows x64 Setup](https://github.com/yxccai/dsh-desktop/releases/download/v0.5.0/DSH-Desktop-0.5.0-win-x64.exe)
