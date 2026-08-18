@@ -107,6 +107,46 @@ DSH Desktop bundles the community plugin market [`@sanqi-normal/dsh-webui-market
 
 Plugins built on official DSH/Cordis services, Host tools, UI slots, themes, and persistent Presets generally offer the best compatibility. Plugins that depend on fixed DOM structures, browser extensions, or development HMR require separate testing.
 
+## Developer mode (bring your own DSH Web)
+
+DSH Desktop is only a shell — by default it picks a runtime in `auto` order (connect to an existing service → global `dsh` → system `npx` → bundled runtime). If you prefer to run DSH Web yourself with the system Node and let the desktop just connect to it (identical to the official Web, and the most flexible way to stay current), use developer mode:
+
+### Option A: connect mode (recommended)
+
+1. Start DSH Web with the system Node in any terminal:
+
+```powershell
+npx @deepseek-ai/dsh web --host 127.0.0.1 --port 3080
+```
+
+2. Configure the desktop to only connect, never start a service:
+
+```json
+{
+  "launchMode": "connect",
+  "url": "http://127.0.0.1:3080"
+}
+```
+
+The config lives at `<userData>\config.json` (Windows default: `C:\Users\<username>\AppData\Roaming\dsh-desktop-shell\config.json`; or wherever `DSH_DESKTOP_HOME` points if set).
+
+3. Launch the desktop — it connects to the Web you started and skips the bundled runtime.
+
+Your DSH then runs in **real Node** (`process.execPath` is `node.exe`), so the desktop only supplies the window, project panel, built-in plugins, and system notifications — no Electron-as-Node bundled runtime, and you get upstream updates as soon as they are released.
+
+### Option B: run from source
+
+```powershell
+git clone https://github.com/yxccai/dsh-desktop.git
+cd dsh-desktop
+npm ci
+npm run check
+npm test
+npm start
+```
+
+`npm start` uses `auto` mode by default: it prefers your system `dsh` or `npx`, so it does not force the bundled runtime either.
+
 ## Platform support
 
 - **Windows x64**: Setup build is available and tested.

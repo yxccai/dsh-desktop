@@ -107,6 +107,46 @@ DSH Desktop 内置社区插件市场 [`@sanqi-normal/dsh-webui-market-plugin`](h
 
 遵循官方 DSH/Cordis 接口的 Host 插件、Slot UI、主题和持久化 Preset 通常具有较好的兼容性。依赖固定 DOM、浏览器扩展或开发 HMR 的插件需要单独测试。
 
+## 开发者模式（用自己的 DSH Web）
+
+DSH Desktop 只是壳——它默认按 `auto` 顺序选择运行环境（连接已有服务 → 全局 `dsh` → 系统 `npx` → 内置 runtime）。如果你想**自己用系统 Node 启动 DSH Web**、桌面端只做壳连接（与官方 Web 完全一致、升级最灵活），可以用开发者模式：
+
+### 方式 A：连接模式（推荐）
+
+1. 用系统 Node 启动 DSH Web（任意终端）：
+
+```powershell
+npx @deepseek-ai/dsh web --host 127.0.0.1 --port 3080
+```
+
+2. 把桌面端配置为只连接、不自行启动服务：
+
+```json
+{
+  "launchMode": "connect",
+  "url": "http://127.0.0.1:3080"
+}
+```
+
+配置位置：`<userData>\config.json`（Windows 默认 `C:\Users\<用户名>\AppData\Roaming\dsh-desktop-shell\config.json`；若设置了 `DSH_DESKTOP_HOME` 则在对应目录）。
+
+3. 启动桌面端，它连接你手动启动的 Web，不再使用内置 runtime。
+
+这样你的 DSH 跑在**真正的 Node** 里（`process.execPath` 是 `node.exe`），桌面端只提供窗口、项目面板、内置插件与系统通知——**不依赖 Electron-as-Node 内置运行时**，也能获得最及时的上游更新。
+
+### 方式 B：从源码运行
+
+```powershell
+git clone https://github.com/yxccai/dsh-desktop.git
+cd dsh-desktop
+npm ci
+npm run check
+npm test
+npm start
+```
+
+`npm start` 默认走 `auto` 模式：优先连接/复用你系统的 `dsh` 或 `npx`，同样不会强制使用内置运行时。
+
 ## 平台支持
 
 - **Windows x64**：安装版已发布并验证。
