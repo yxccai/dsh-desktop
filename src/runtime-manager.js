@@ -30,8 +30,12 @@ function inspectService(url, timeoutMs = 1500) {
           if (body.length >= 256 * 1024) response.destroy();
         });
         response.on('end', () => {
+          // DSH marks its bootstrap in two spellings across versions:
+          //   window.__DSH_BOOT__ = {...}            (older)
+          //   globalThis["__DSH_BOOT__"] = {...}     (newer)
+          // Match either, plus the plugin-system marker.
           const isDsh = response.statusCode === 200
-            && body.includes('window.__DSH_BOOT__')
+            && /(?:window\.__DSH_BOOT__|__DSH_BOOT__)/.test(body)
             && body.includes('@deepseek-ai/dsh-');
           done(isDsh ? 'dsh' : 'other');
         });
